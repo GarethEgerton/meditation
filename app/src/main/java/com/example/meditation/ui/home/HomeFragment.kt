@@ -37,7 +37,10 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         // Use activity scope for ViewModel to share data between fragments
-        viewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
+        viewModel = ViewModelProvider(
+            requireActivity(),
+            ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
+        ).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
 
         // Initialize ToneGenerator for bell sound
@@ -87,40 +90,31 @@ class HomeFragment : Fragment() {
         }
 
         // Observe completion progress
-        observeProgress(viewModel)
+        observeProgress()
 
         return binding.root
     }
 
-    private fun observeProgress(viewModel: HomeViewModel) {
+    private fun observeProgress() {
         // Observe 1-minute timer progress
         viewModel.oneMinCompletions.observe(viewLifecycleOwner) { completions ->
-            val goal = viewModel.oneMinGoal.value
-            updateProgressText(binding.progress1min, completions, goal)
-        }
-        viewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
-            val completions = viewModel.oneMinCompletions.value ?: 0
-            updateProgressText(binding.progress1min, completions, goal)
+            viewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
+                updateProgressText(binding.progress1min, completions, goal)
+            }
         }
 
         // Observe 2-minute timer progress
         viewModel.twoMinCompletions.observe(viewLifecycleOwner) { completions ->
-            val goal = viewModel.twoMinGoal.value
-            updateProgressText(binding.progress2min, completions, goal)
-        }
-        viewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
-            val completions = viewModel.twoMinCompletions.value ?: 0
-            updateProgressText(binding.progress2min, completions, goal)
+            viewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
+                updateProgressText(binding.progress2min, completions, goal)
+            }
         }
 
         // Observe 5-minute timer progress
         viewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completions ->
-            val goal = viewModel.fiveMinGoal.value
-            updateProgressText(binding.progress5min, completions, goal)
-        }
-        viewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
-            val completions = viewModel.fiveMinCompletions.value ?: 0
-            updateProgressText(binding.progress5min, completions, goal)
+            viewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
+                updateProgressText(binding.progress5min, completions, goal)
+            }
         }
     }
 

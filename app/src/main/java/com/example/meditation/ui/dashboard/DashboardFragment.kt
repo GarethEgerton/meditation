@@ -26,8 +26,11 @@ class DashboardFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        dashboardViewModel = ViewModelProvider(this).get(DashboardViewModel::class.java)
-        val homeViewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
+        dashboardViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
+        ).get(DashboardViewModel::class.java)
+        
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
 
         // Initialize EditText fields with default values
@@ -40,38 +43,23 @@ class DashboardFragment : Fragment() {
         setupGoalInput(binding.twoMinGoal, dashboardViewModel::updateTwoMinGoal)
         setupGoalInput(binding.fiveMinGoal, dashboardViewModel::updateFiveMinGoal)
 
-        // Observe goal values and update HomeViewModel
+        // Observe goal values
         dashboardViewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
             if (binding.oneMinGoal.text.toString() != goal.toString()) {
                 binding.oneMinGoal.setText(goal.toString())
             }
-            homeViewModel.updateGoals(
-                goal,
-                dashboardViewModel.twoMinGoal.value ?: 0,
-                dashboardViewModel.fiveMinGoal.value ?: 0
-            )
         }
 
         dashboardViewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
             if (binding.twoMinGoal.text.toString() != goal.toString()) {
                 binding.twoMinGoal.setText(goal.toString())
             }
-            homeViewModel.updateGoals(
-                dashboardViewModel.oneMinGoal.value ?: 0,
-                goal,
-                dashboardViewModel.fiveMinGoal.value ?: 0
-            )
         }
 
         dashboardViewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
             if (binding.fiveMinGoal.text.toString() != goal.toString()) {
                 binding.fiveMinGoal.setText(goal.toString())
             }
-            homeViewModel.updateGoals(
-                dashboardViewModel.oneMinGoal.value ?: 0,
-                dashboardViewModel.twoMinGoal.value ?: 0,
-                goal
-            )
         }
 
         return binding.root

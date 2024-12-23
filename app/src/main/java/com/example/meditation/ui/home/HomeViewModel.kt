@@ -1,150 +1,155 @@
 package com.example.meditation.ui.home
 
-import android.os.CountDownTimer
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.*
+import com.example.meditation.data.MeditationDatabase
+import com.example.meditation.data.MeditationRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
-class HomeViewModel : ViewModel() {
-    private var currentTimer: CountDownTimer? = null
-    private var activeTimer: Int = 0
-    private var remainingTimeMillis: Long = 0
-    private var isPaused: Boolean = false
-    
-    private val _timerOneText = MutableLiveData<String>()
-    private val _timerTwoText = MutableLiveData<String>()
-    private val _timerFiveText = MutableLiveData<String>()
-    private val _timerFinished = MutableLiveData<Boolean>()
-    private val _timerState = MutableLiveData<TimerState>()
-    private val _errorEvent = MutableLiveData<Int>()
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository: MeditationRepository
+    private var timerJob: Job? = null
 
-    // Track completions for each timer
-    private val _oneMinCompletions = MutableLiveData<Int>().apply { value = 0 }
-    private val _twoMinCompletions = MutableLiveData<Int>().apply { value = 0 }
-    private val _fiveMinCompletions = MutableLiveData<Int>().apply { value = 0 }
-
-    // Track daily goals for each timer
-    private val _oneMinGoal = MutableLiveData<Int?>()
-    private val _twoMinGoal = MutableLiveData<Int?>()
-    private val _fiveMinGoal = MutableLiveData<Int?>()
-    
-    val timerOneText: LiveData<String> = _timerOneText
-    val timerTwoText: LiveData<String> = _timerTwoText
-    val timerFiveText: LiveData<String> = _timerFiveText
-    val timerFinished: LiveData<Boolean> = _timerFinished
+    private val _timerState = MutableLiveData(TimerState(0, false))
     val timerState: LiveData<TimerState> = _timerState
+
+    private val _timerOneText = MutableLiveData("1:00")
+    val timerOneText: LiveData<String> = _timerOneText
+
+    private val _timerTwoText = MutableLiveData("2:00")
+    val timerTwoText: LiveData<String> = _timerTwoText
+
+    private val _timerFiveText = MutableLiveData("5:00")
+    val timerFiveText: LiveData<String> = _timerFiveText
+
+    private val _timerFinished = MutableLiveData(false)
+    val timerFinished: LiveData<Boolean> = _timerFinished
+
+    private val _errorEvent = MutableLiveData<Int>()
     val errorEvent: LiveData<Int> = _errorEvent
 
-    val oneMinCompletions: LiveData<Int> = _oneMinCompletions
-    val twoMinCompletions: LiveData<Int> = _twoMinCompletions
-    val fiveMinCompletions: LiveData<Int> = _fiveMinCompletions
+    // Goals and completions from database
+    val oneMinGoal: LiveData<Int>
+    val twoMinGoal: LiveData<Int>
+    val fiveMinGoal: LiveData<Int>
 
-    val oneMinGoal: LiveData<Int?> = _oneMinGoal
-    val twoMinGoal: LiveData<Int?> = _twoMinGoal
-    val fiveMinGoal: LiveData<Int?> = _fiveMinGoal
+    val oneMinCompletions: LiveData<Int>
+    val twoMinCompletions: LiveData<Int>
+    val fiveMinCompletions: LiveData<Int>
 
     init {
-        resetTimers()
+        val database = MeditationDatabase.getDatabase(application)
+        repository = MeditationRepository(database.meditationDao())
+
+        // Initialize goals from database
+        oneMinGoal = repository.getGoalForTimer(1)
+            .map { it?.timesPerDay ?: 0 }
+            .asLiveData()
+
+        twoMinGoal = repository.getGoalForTimer(2)
+            .map { it?.timesPerDay ?: 0 }
+            .asLiveData()
+
+        fiveMinGoal = repository.getGoalForTimer(5)
+            .map { it?.timesPerDay ?: 0 }
+            .asLiveData()
+
+        // Initialize completions from database
+        oneMinCompletions = repository.getTodayCompletionCount(1).asLiveData()
+        twoMinCompletions = repository.getTodayCompletionCount(2).asLiveData()
+        fiveMinCompletions = repository.getTodayCompletionCount(5).asLiveData()
     }
 
     fun handleTimerClick(minutes: Int) {
-        when {
-            activeTimer != 0 && activeTimer != minutes -> {
-                _errorEvent.value = minutes
+        val currentState = _timerState.value!!
+        
+        if (currentState.activeTimer == 0) {
+            startTimer(minutes)
+        } else if (currentState.activeTimer == minutes) {
+            if (currentState.isPaused) {
+                resumeTimer(minutes)
+            } else {
+                pauseTimer()
             }
-            activeTimer == 0 -> startTimer(minutes)
-            activeTimer == minutes && !isPaused -> pauseTimer()
-            activeTimer == minutes && isPaused -> resumeTimer()
+        } else {
+            _errorEvent.value = minutes
         }
     }
 
     private fun startTimer(minutes: Int) {
-        currentTimer?.cancel()
-        activeTimer = minutes
-        isPaused = false
-        
-        val milliseconds = minutes * 60 * 1000L
-        remainingTimeMillis = milliseconds
-        startCountdown(milliseconds)
-        _timerState.value = TimerState(activeTimer, isPaused)
+        _timerState.value = TimerState(minutes, false)
+        startCountdown(minutes)
+    }
+
+    private fun resumeTimer(minutes: Int) {
+        _timerState.value = TimerState(minutes, false)
+        startCountdown(minutes)
     }
 
     private fun pauseTimer() {
-        currentTimer?.cancel()
-        isPaused = true
-        _timerState.value = TimerState(activeTimer, isPaused)
-    }
-
-    private fun resumeTimer() {
-        isPaused = false
-        startCountdown(remainingTimeMillis)
-        _timerState.value = TimerState(activeTimer, isPaused)
-    }
-
-    private fun startCountdown(milliseconds: Long) {
-        currentTimer = object : CountDownTimer(milliseconds, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                remainingTimeMillis = millisUntilFinished
-                val minutes = millisUntilFinished / 1000 / 60
-                val seconds = (millisUntilFinished / 1000) % 60
-                val timeText = String.format("%d:%02d", minutes, seconds)
-                
-                when (activeTimer) {
-                    1 -> _timerOneText.value = timeText
-                    2 -> _timerTwoText.value = timeText
-                    5 -> _timerFiveText.value = timeText
-                }
-            }
-
-            override fun onFinish() {
-                // Increment completion counter for the active timer
-                when (activeTimer) {
-                    1 -> _oneMinCompletions.value = (_oneMinCompletions.value ?: 0) + 1
-                    2 -> _twoMinCompletions.value = (_twoMinCompletions.value ?: 0) + 1
-                    5 -> _fiveMinCompletions.value = (_fiveMinCompletions.value ?: 0) + 1
-                }
-                _timerFinished.value = true
-                resetTimers()
-            }
-        }.start()
+        timerJob?.cancel()
+        _timerState.value = _timerState.value?.copy(isPaused = true)
     }
 
     fun cancelTimer(minutes: Int) {
-        if (activeTimer == minutes) {
-            currentTimer?.cancel()
-            resetTimers()
+        if (_timerState.value?.activeTimer == minutes) {
+            timerJob?.cancel()
+            _timerState.value = TimerState(0, false)
+            resetTimerText(minutes)
         }
     }
 
-    private fun resetTimers() {
-        _timerOneText.value = "1:00"
-        _timerTwoText.value = "2:00"
-        _timerFiveText.value = "5:00"
-        _timerFinished.value = false
-        _timerState.value = TimerState(0, false)
-        activeTimer = 0
-        isPaused = false
-        remainingTimeMillis = 0
+    private fun startCountdown(minutes: Int) {
+        timerJob?.cancel()
+        
+        val totalSeconds = minutes * 60
+        var remainingSeconds = totalSeconds
+
+        timerJob = viewModelScope.launch {
+            while (remainingSeconds > 0) {
+                updateTimerText(minutes, remainingSeconds)
+                delay(1000)
+                remainingSeconds--
+            }
+            
+            // Timer completed
+            _timerState.value = TimerState(0, false)
+            resetTimerText(minutes)
+            _timerFinished.value = true
+            _timerFinished.value = false
+
+            // Record completion in database
+            repository.recordCompletion(minutes)
+        }
     }
 
-    // Update goals from dashboard
-    fun updateGoals(oneMin: Int?, twoMin: Int?, fiveMin: Int?) {
-        _oneMinGoal.value = oneMin
-        _twoMinGoal.value = twoMin
-        _fiveMinGoal.value = fiveMin
+    private fun updateTimerText(minutes: Int, remainingSeconds: Int) {
+        val text = String.format("%d:%02d", remainingSeconds / 60, remainingSeconds % 60)
+        when (minutes) {
+            1 -> _timerOneText.value = text
+            2 -> _timerTwoText.value = text
+            5 -> _timerFiveText.value = text
+        }
     }
 
-    // Reset completions (should be called daily)
-    fun resetCompletions() {
-        _oneMinCompletions.value = 0
-        _twoMinCompletions.value = 0
-        _fiveMinCompletions.value = 0
+    private fun resetTimerText(minutes: Int) {
+        when (minutes) {
+            1 -> _timerOneText.value = "1:00"
+            2 -> _timerTwoText.value = "2:00"
+            5 -> _timerFiveText.value = "5:00"
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        currentTimer?.cancel()
+        timerJob?.cancel()
     }
 
-    data class TimerState(val activeTimer: Int, val isPaused: Boolean)
+    data class TimerState(
+        val activeTimer: Int,  // 0 for no timer, 1 for 1min, 2 for 2min, 5 for 5min
+        val isPaused: Boolean
+    )
 }
