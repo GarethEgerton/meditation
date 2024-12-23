@@ -4,6 +4,8 @@ import android.animation.AnimatorInflater
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.animation.AnimatorSet
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.media.ToneGenerator
 import android.media.AudioManager
@@ -22,6 +24,8 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private lateinit var toneGenerator: ToneGenerator
+    private var currentAnimation: ObjectAnimator? = null
+    private var pulseAnimations = mutableMapOf<MaterialButton, AnimatorSet>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,6 +62,7 @@ class HomeFragment : Fragment() {
         // Observe timer state
         homeViewModel.timerState.observe(viewLifecycleOwner) { state ->
             updateCancelButtonsVisibility(state.activeTimer, state.isPaused)
+            updateActiveTimerAppearance(state.activeTimer, state.isPaused)
         }
 
         // Observe timer completion
@@ -107,8 +112,68 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun updateActiveTimerAppearance(activeTimer: Int, isPaused: Boolean) {
+        // Reset all buttons to default state
+        resetButtonAppearance(binding.timer1min)
+        resetButtonAppearance(binding.timer2min)
+        resetButtonAppearance(binding.timer5min)
+
+        // Update active timer appearance
+        when (activeTimer) {
+            1 -> setActiveButtonAppearance(binding.timer1min, isPaused)
+            2 -> setActiveButtonAppearance(binding.timer2min, isPaused)
+            5 -> setActiveButtonAppearance(binding.timer5min, isPaused)
+        }
+    }
+
+    private fun resetButtonAppearance(button: MaterialButton) {
+        // Cancel any existing pulse animation
+        pulseAnimations[button]?.cancel()
+        pulseAnimations.remove(button)
+
+        button.apply {
+            strokeWidth = 0
+            setBackgroundColor(Color.parseColor("#BB86FC"))
+            elevation = resources.getDimension(R.dimen.default_button_elevation)
+            scaleX = 1.0f
+            scaleY = 1.0f
+        }
+    }
+
+    private fun setActiveButtonAppearance(button: MaterialButton, isPaused: Boolean) {
+        // Cancel any existing pulse animation
+        pulseAnimations[button]?.cancel()
+        pulseAnimations.remove(button)
+
+        button.apply {
+            if (isPaused) {
+                // Paused state appearance
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.button_stroke_width)
+                strokeColor = ColorStateList.valueOf(Color.parseColor("#BB86FC"))
+                setBackgroundColor(Color.parseColor("#3D2E5C"))
+            } else {
+                // Active state appearance
+                strokeWidth = 0
+                setBackgroundColor(Color.parseColor("#9965F4"))
+                elevation = resources.getDimension(R.dimen.active_button_elevation)
+                
+                // Start pulsing animation
+                val pulseAnimation = AnimatorInflater.loadAnimator(
+                    context,
+                    R.anim.button_pulse
+                ) as AnimatorSet
+                pulseAnimation.setTarget(this)
+                pulseAnimation.start()
+                pulseAnimations[button] = pulseAnimation
+            }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        // Cancel all animations
+        pulseAnimations.values.forEach { it.cancel() }
+        pulseAnimations.clear()
         _binding = null
         toneGenerator.release()
     }
