@@ -19,7 +19,7 @@
 
         <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="160dp"
+            android:layout_height="140dp"
             android:layout_weight="1">
 
             <com.google.android.material.button.MaterialButton
@@ -28,6 +28,7 @@
                 android:layout_height="100dp"
                 android:layout_gravity="center_horizontal|top"
                 android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="4dp"
                 android:text="1:00"
                 android:textSize="24sp"
                 android:backgroundTint="#BB86FC"
@@ -35,18 +36,30 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/cancel_1min"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center_horizontal|bottom"
-                android:text="Reset"
+                android:layout_marginBottom="8dp"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                android:padding="6dp"
+                app:icon="@drawable/ic_reset"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="#80BB86FC"
                 android:visibility="gone"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:textColor="#BB86FC" />
+                android:alpha="0.7"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="#40BB86FC"
+                app:strokeWidth="1dp"
+                app:cornerRadius="16dp" />
         </FrameLayout>
 
         <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="160dp"
+            android:layout_height="140dp"
             android:layout_weight="1">
 
             <com.google.android.material.button.MaterialButton
@@ -55,6 +68,7 @@
                 android:layout_height="100dp"
                 android:layout_gravity="center_horizontal|top"
                 android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="4dp"
                 android:text="2:00"
                 android:textSize="24sp"
                 android:backgroundTint="#BB86FC"
@@ -62,18 +76,30 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/cancel_2min"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center_horizontal|bottom"
-                android:text="Reset"
+                android:layout_marginBottom="8dp"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                android:padding="6dp"
+                app:icon="@drawable/ic_reset"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="#80BB86FC"
                 android:visibility="gone"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:textColor="#BB86FC" />
+                android:alpha="0.7"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="#40BB86FC"
+                app:strokeWidth="1dp"
+                app:cornerRadius="16dp" />
         </FrameLayout>
 
         <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="160dp"
+            android:layout_height="140dp"
             android:layout_weight="1">
 
             <com.google.android.material.button.MaterialButton
@@ -82,6 +108,7 @@
                 android:layout_height="100dp"
                 android:layout_gravity="center_horizontal|top"
                 android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="4dp"
                 android:text="5:00"
                 android:textSize="24sp"
                 android:backgroundTint="#BB86FC"
@@ -89,13 +116,25 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/cancel_5min"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center_horizontal|bottom"
-                android:text="Reset"
+                android:layout_marginBottom="8dp"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                android:padding="6dp"
+                app:icon="@drawable/ic_reset"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="#80BB86FC"
                 android:visibility="gone"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:textColor="#BB86FC" />
+                android:alpha="0.7"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="#40BB86FC"
+                app:strokeWidth="1dp"
+                app:cornerRadius="16dp" />
         </FrameLayout>
 
     </LinearLayout>
