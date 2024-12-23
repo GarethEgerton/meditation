@@ -117,40 +117,13 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateActiveTimerAppearance(activeTimer: Int, isPaused: Boolean) {
-        // Reset all buttons to default state
-        resetButtonAppearance(binding.timer1min)
-        resetButtonAppearance(binding.timer2min)
-        resetButtonAppearance(binding.timer5min)
-
-        // Update active timer appearance
-        when (activeTimer) {
-            1 -> setActiveButtonAppearance(binding.timer1min, isPaused)
-            2 -> setActiveButtonAppearance(binding.timer2min, isPaused)
-            5 -> setActiveButtonAppearance(binding.timer5min, isPaused)
-        }
+        // Update all buttons based on state
+        setButtonAppearance(binding.timer1min, activeTimer, 1, isPaused)
+        setButtonAppearance(binding.timer2min, activeTimer, 2, isPaused)
+        setButtonAppearance(binding.timer5min, activeTimer, 5, isPaused)
     }
 
-    private fun resetButtonAppearance(button: MaterialButton) {
-        // Cancel any existing pulse animation
-        pulseAnimations[button]?.cancel()
-        pulseAnimations.remove(button)
-
-        val color = when (button.id) {
-            R.id.timer_1min -> resources.getColor(R.color.timer_1min, null)
-            R.id.timer_2min -> resources.getColor(R.color.timer_2min, null)
-            else -> resources.getColor(R.color.timer_5min, null)
-        }
-
-        button.apply {
-            strokeWidth = 0
-            backgroundTintList = ColorStateList.valueOf(color)
-            elevation = resources.getDimension(R.dimen.default_button_elevation)
-            scaleX = 1.0f
-            scaleY = 1.0f
-        }
-    }
-
-    private fun setActiveButtonAppearance(button: MaterialButton, isPaused: Boolean) {
+    private fun setButtonAppearance(button: MaterialButton, activeTimer: Int, buttonMinutes: Int, isPaused: Boolean) {
         // Cancel any existing pulse animation
         pulseAnimations[button]?.cancel()
         pulseAnimations.remove(button)
@@ -167,27 +140,80 @@ class HomeFragment : Fragment() {
             else -> resources.getColor(R.color.timer_5min_paused, null)
         }
 
+        val inactiveColor = when (button.id) {
+            R.id.timer_1min -> resources.getColor(R.color.timer_1min_inactive, null)
+            R.id.timer_2min -> resources.getColor(R.color.timer_2min_inactive, null)
+            else -> resources.getColor(R.color.timer_5min_inactive, null)
+        }
+
         button.apply {
-            if (isPaused) {
-                // Paused state appearance
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.button_stroke_width)
-                strokeColor = ColorStateList.valueOf(baseColor)
-                backgroundTintList = ColorStateList.valueOf(pausedColor)
-            } else {
-                // Active state appearance
-                strokeWidth = 0
-                backgroundTintList = ColorStateList.valueOf(baseColor)
-                elevation = resources.getDimension(R.dimen.active_button_elevation)
-                
-                // Start pulsing animation
-                val pulseAnimation = AnimatorInflater.loadAnimator(
-                    context,
-                    R.anim.button_pulse
-                ) as AnimatorSet
-                pulseAnimation.setTarget(this)
-                pulseAnimation.start()
-                pulseAnimations[button] = pulseAnimation
+            when {
+                // This is the active timer
+                activeTimer == buttonMinutes -> {
+                    if (isPaused) {
+                        // Paused state appearance
+                        strokeWidth = resources.getDimensionPixelSize(R.dimen.button_stroke_width)
+                        strokeColor = ColorStateList.valueOf(baseColor)
+                        animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, pausedColor, 1.0f)
+                        isEnabled = true
+                    } else {
+                        // Active state appearance
+                        strokeWidth = 0
+                        animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, baseColor, 1.0f)
+                        elevation = resources.getDimension(R.dimen.active_button_elevation)
+                        isEnabled = true
+                        
+                        // Start pulsing animation
+                        val pulseAnimation = AnimatorInflater.loadAnimator(
+                            context,
+                            R.anim.button_pulse
+                        ) as AnimatorSet
+                        pulseAnimation.setTarget(this)
+                        pulseAnimation.start()
+                        pulseAnimations[button] = pulseAnimation
+                    }
+                }
+                // Another timer is active
+                activeTimer != 0 -> {
+                    // Inactive state appearance
+                    strokeWidth = 0
+                    animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, inactiveColor, 0.5f)
+                    elevation = 0f
+                    isEnabled = false
+                    scaleX = 1.0f
+                    scaleY = 1.0f
+                }
+                // No timer is active
+                else -> {
+                    // Default state appearance
+                    strokeWidth = 0
+                    animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, baseColor, 1.0f)
+                    elevation = resources.getDimension(R.dimen.default_button_elevation)
+                    isEnabled = true
+                    scaleX = 1.0f
+                    scaleY = 1.0f
+                }
             }
+        }
+    }
+
+    private fun animateButtonState(button: MaterialButton, fromColor: Int, toColor: Int, targetAlpha: Float) {
+        // Color animation
+        ValueAnimator.ofObject(ArgbEvaluator(), fromColor, toColor).apply {
+            duration = 500 // 0.5 seconds
+            addUpdateListener { animator ->
+                button.backgroundTintList = ColorStateList.valueOf(animator.animatedValue as Int)
+            }
+            start()
+        }
+
+        // Alpha animation
+        ValueAnimator.ofFloat(button.alpha, targetAlpha).apply {
+            duration = 500 // 0.5 seconds
+            addUpdateListener { animator ->
+                button.alpha = animator.animatedValue as Float
+            }
+            start()
         }
     }
 

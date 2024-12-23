@@ -27,4 +27,9 @@
     <color name="timer_1min_paused">#FF3D5F5D</color>
     <color name="timer_2min_paused">#FF734D5F</color>
     <color name="timer_5min_paused">#FF3D2E5C</color>
+
+    <!-- Inactive state colors (greyed out versions) -->
+    <color name="timer_1min_inactive">#FF2F3B3A</color>
+    <color name="timer_2min_inactive">#FF3B2F33</color>
+    <color name="timer_5min_inactive">#FF2F2F3B</color>
 </resources>

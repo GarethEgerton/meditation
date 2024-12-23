@@ -31,13 +31,12 @@ class HomeViewModel : ViewModel() {
 
     fun handleTimerClick(minutes: Int) {
         when {
-            activeTimer != 0 && activeTimer != minutes && !isPaused -> {
+            activeTimer != 0 && activeTimer != minutes -> {
                 _errorEvent.value = minutes
             }
             activeTimer == 0 -> startTimer(minutes)
             activeTimer == minutes && !isPaused -> pauseTimer()
             activeTimer == minutes && isPaused -> resumeTimer()
-            else -> startTimer(minutes)
         }
     }
 
