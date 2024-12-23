@@ -17,6 +17,16 @@ class HomeViewModel : ViewModel() {
     private val _timerFinished = MutableLiveData<Boolean>()
     private val _timerState = MutableLiveData<TimerState>()
     private val _errorEvent = MutableLiveData<Int>()
+
+    // Track completions for each timer
+    private val _oneMinCompletions = MutableLiveData<Int>().apply { value = 0 }
+    private val _twoMinCompletions = MutableLiveData<Int>().apply { value = 0 }
+    private val _fiveMinCompletions = MutableLiveData<Int>().apply { value = 0 }
+
+    // Track daily goals for each timer
+    private val _oneMinGoal = MutableLiveData<Int?>()
+    private val _twoMinGoal = MutableLiveData<Int?>()
+    private val _fiveMinGoal = MutableLiveData<Int?>()
     
     val timerOneText: LiveData<String> = _timerOneText
     val timerTwoText: LiveData<String> = _timerTwoText
@@ -24,6 +34,14 @@ class HomeViewModel : ViewModel() {
     val timerFinished: LiveData<Boolean> = _timerFinished
     val timerState: LiveData<TimerState> = _timerState
     val errorEvent: LiveData<Int> = _errorEvent
+
+    val oneMinCompletions: LiveData<Int> = _oneMinCompletions
+    val twoMinCompletions: LiveData<Int> = _twoMinCompletions
+    val fiveMinCompletions: LiveData<Int> = _fiveMinCompletions
+
+    val oneMinGoal: LiveData<Int?> = _oneMinGoal
+    val twoMinGoal: LiveData<Int?> = _twoMinGoal
+    val fiveMinGoal: LiveData<Int?> = _fiveMinGoal
 
     init {
         resetTimers()
@@ -79,6 +97,12 @@ class HomeViewModel : ViewModel() {
             }
 
             override fun onFinish() {
+                // Increment completion counter for the active timer
+                when (activeTimer) {
+                    1 -> _oneMinCompletions.value = (_oneMinCompletions.value ?: 0) + 1
+                    2 -> _twoMinCompletions.value = (_twoMinCompletions.value ?: 0) + 1
+                    5 -> _fiveMinCompletions.value = (_fiveMinCompletions.value ?: 0) + 1
+                }
                 _timerFinished.value = true
                 resetTimers()
             }
@@ -101,6 +125,20 @@ class HomeViewModel : ViewModel() {
         activeTimer = 0
         isPaused = false
         remainingTimeMillis = 0
+    }
+
+    // Update goals from dashboard
+    fun updateGoals(oneMin: Int?, twoMin: Int?, fiveMin: Int?) {
+        _oneMinGoal.value = oneMin
+        _twoMinGoal.value = twoMin
+        _fiveMinGoal.value = fiveMin
+    }
+
+    // Reset completions (should be called daily)
+    fun resetCompletions() {
+        _oneMinCompletions.value = 0
+        _twoMinCompletions.value = 0
+        _fiveMinCompletions.value = 0
     }
 
     override fun onCleared() {

@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.meditation.R
@@ -32,7 +33,8 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
+        // Use activity scope for ViewModel to share data between fragments
+        val homeViewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
 
         // Initialize ToneGenerator for bell sound
@@ -81,7 +83,54 @@ class HomeFragment : Fragment() {
             }
         }
 
+        // Observe completion progress
+        observeProgress(homeViewModel)
+
         return binding.root
+    }
+
+    private fun observeProgress(homeViewModel: HomeViewModel) {
+        // Observe 1-minute timer progress
+        homeViewModel.oneMinCompletions.observe(viewLifecycleOwner) { completions ->
+            val goal = homeViewModel.oneMinGoal.value
+            updateProgressText(binding.progress1min, completions, goal)
+        }
+        homeViewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
+            val completions = homeViewModel.oneMinCompletions.value ?: 0
+            updateProgressText(binding.progress1min, completions, goal)
+        }
+
+        // Observe 2-minute timer progress
+        homeViewModel.twoMinCompletions.observe(viewLifecycleOwner) { completions ->
+            val goal = homeViewModel.twoMinGoal.value
+            updateProgressText(binding.progress2min, completions, goal)
+        }
+        homeViewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
+            val completions = homeViewModel.twoMinCompletions.value ?: 0
+            updateProgressText(binding.progress2min, completions, goal)
+        }
+
+        // Observe 5-minute timer progress
+        homeViewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completions ->
+            val goal = homeViewModel.fiveMinGoal.value
+            updateProgressText(binding.progress5min, completions, goal)
+        }
+        homeViewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
+            val completions = homeViewModel.fiveMinCompletions.value ?: 0
+            updateProgressText(binding.progress5min, completions, goal)
+        }
+    }
+
+    private fun updateProgressText(textView: TextView, completions: Int, goal: Int?) {
+        textView.apply {
+            if (goal == null) {
+                visibility = View.GONE
+            } else {
+                visibility = View.VISIBLE
+                text = "$completions/$goal"
+                alpha = if (completions >= goal) 1.0f else 0.8f
+            }
+        }
     }
 
     private fun updateCancelButtonsVisibility(activeTimer: Int, isPaused: Boolean) {
