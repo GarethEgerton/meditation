@@ -91,13 +91,17 @@ class HomeFragment : Fragment() {
     }
 
     private fun showErrorAnimation(button: MaterialButton) {
-        val colorFrom = Color.parseColor("#BB86FC")
-        val colorTo = Color.parseColor("#FF5252")
+        val colorFrom = when (button.id) {
+            R.id.timer_1min -> resources.getColor(R.color.timer_1min, null)
+            R.id.timer_2min -> resources.getColor(R.color.timer_2min, null)
+            else -> resources.getColor(R.color.timer_5min, null)
+        }
+        val colorTo = Color.parseColor("#FFFF5252")
 
         ValueAnimator.ofObject(ArgbEvaluator(), colorFrom, colorTo).apply {
             duration = 100
             addUpdateListener { animator ->
-                button.setBackgroundColor(animator.animatedValue as Int)
+                button.backgroundTintList = ColorStateList.valueOf(animator.animatedValue as Int)
             }
             start()
         }
@@ -106,7 +110,7 @@ class HomeFragment : Fragment() {
             duration = 100
             startDelay = 100
             addUpdateListener { animator ->
-                button.setBackgroundColor(animator.animatedValue as Int)
+                button.backgroundTintList = ColorStateList.valueOf(animator.animatedValue as Int)
             }
             start()
         }
@@ -131,9 +135,15 @@ class HomeFragment : Fragment() {
         pulseAnimations[button]?.cancel()
         pulseAnimations.remove(button)
 
+        val color = when (button.id) {
+            R.id.timer_1min -> resources.getColor(R.color.timer_1min, null)
+            R.id.timer_2min -> resources.getColor(R.color.timer_2min, null)
+            else -> resources.getColor(R.color.timer_5min, null)
+        }
+
         button.apply {
             strokeWidth = 0
-            setBackgroundColor(Color.parseColor("#BB86FC"))
+            backgroundTintList = ColorStateList.valueOf(color)
             elevation = resources.getDimension(R.dimen.default_button_elevation)
             scaleX = 1.0f
             scaleY = 1.0f
@@ -145,16 +155,28 @@ class HomeFragment : Fragment() {
         pulseAnimations[button]?.cancel()
         pulseAnimations.remove(button)
 
+        val baseColor = when (button.id) {
+            R.id.timer_1min -> resources.getColor(R.color.timer_1min, null)
+            R.id.timer_2min -> resources.getColor(R.color.timer_2min, null)
+            else -> resources.getColor(R.color.timer_5min, null)
+        }
+
+        val pausedColor = when (button.id) {
+            R.id.timer_1min -> resources.getColor(R.color.timer_1min_paused, null)
+            R.id.timer_2min -> resources.getColor(R.color.timer_2min_paused, null)
+            else -> resources.getColor(R.color.timer_5min_paused, null)
+        }
+
         button.apply {
             if (isPaused) {
                 // Paused state appearance
                 strokeWidth = resources.getDimensionPixelSize(R.dimen.button_stroke_width)
-                strokeColor = ColorStateList.valueOf(Color.parseColor("#BB86FC"))
-                setBackgroundColor(Color.parseColor("#3D2E5C"))
+                strokeColor = ColorStateList.valueOf(baseColor)
+                backgroundTintList = ColorStateList.valueOf(pausedColor)
             } else {
                 // Active state appearance
                 strokeWidth = 0
-                setBackgroundColor(Color.parseColor("#9965F4"))
+                backgroundTintList = ColorStateList.valueOf(baseColor)
                 elevation = resources.getDimension(R.dimen.active_button_elevation)
                 
                 // Start pulsing animation

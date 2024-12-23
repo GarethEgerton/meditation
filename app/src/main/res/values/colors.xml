@@ -7,4 +7,24 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Timer button colors - more subtle palette -->
+    <color name="timer_1min">#FF80CBC4</color>  <!-- Soft Teal -->
+    <color name="timer_2min">#FFF48FB1</color>  <!-- Soft Pink -->
+    <color name="timer_5min">#FFBB86FC</color>  <!-- Original Purple -->
+    
+    <!-- Timer button reset colors with alpha -->
+    <color name="timer_1min_reset">#8080CBC4</color>
+    <color name="timer_2min_reset">#80F48FB1</color>
+    <color name="timer_5min_reset">#80BB86FC</color>
+    
+    <!-- Timer button stroke colors with alpha -->
+    <color name="timer_1min_stroke">#4080CBC4</color>
+    <color name="timer_2min_stroke">#40F48FB1</color>
+    <color name="timer_5min_stroke">#40BB86FC</color>
+    
+    <!-- Paused state background colors (darker, faded versions) -->
+    <color name="timer_1min_paused">#FF3D5F5D</color>
+    <color name="timer_2min_paused">#FF734D5F</color>
+    <color name="timer_5min_paused">#FF3D2E5C</color>
 </resources>

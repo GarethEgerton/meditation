@@ -31,7 +31,7 @@
                 android:layout_marginTop="4dp"
                 android:text="1:00"
                 android:textSize="24sp"
-                android:backgroundTint="#BB86FC"
+                android:backgroundTint="@color/timer_1min"
                 app:cornerRadius="50dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -48,11 +48,11 @@
                 app:icon="@drawable/ic_reset"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
-                app:iconTint="#80BB86FC"
+                app:iconTint="@color/timer_1min_reset"
                 android:visibility="gone"
                 android:alpha="0.7"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                app:strokeColor="#40BB86FC"
+                app:strokeColor="@color/timer_1min_stroke"
                 app:strokeWidth="1dp"
                 app:cornerRadius="16dp" />
         </FrameLayout>
@@ -71,7 +71,7 @@
                 android:layout_marginTop="4dp"
                 android:text="2:00"
                 android:textSize="24sp"
-                android:backgroundTint="#BB86FC"
+                android:backgroundTint="@color/timer_2min"
                 app:cornerRadius="50dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -88,11 +88,11 @@
                 app:icon="@drawable/ic_reset"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
-                app:iconTint="#80BB86FC"
+                app:iconTint="@color/timer_2min_reset"
                 android:visibility="gone"
                 android:alpha="0.7"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                app:strokeColor="#40BB86FC"
+                app:strokeColor="@color/timer_2min_stroke"
                 app:strokeWidth="1dp"
                 app:cornerRadius="16dp" />
         </FrameLayout>
@@ -111,7 +111,7 @@
                 android:layout_marginTop="4dp"
                 android:text="5:00"
                 android:textSize="24sp"
-                android:backgroundTint="#BB86FC"
+                android:backgroundTint="@color/timer_5min"
                 app:cornerRadius="50dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -128,11 +128,11 @@
                 app:icon="@drawable/ic_reset"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
-                app:iconTint="#80BB86FC"
+                app:iconTint="@color/timer_5min_reset"
                 android:visibility="gone"
                 android:alpha="0.7"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                app:strokeColor="#40BB86FC"
+                app:strokeColor="@color/timer_5min_stroke"
                 app:strokeWidth="1dp"
                 app:cornerRadius="16dp" />
         </FrameLayout>

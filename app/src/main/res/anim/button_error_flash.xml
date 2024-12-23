@@ -3,14 +3,14 @@
     android:duration="200">
     <objectAnimator
         android:propertyName="backgroundTint"
-        android:valueFrom="#BB86FC"
-        android:valueTo="#FF5252"
+        android:valueFrom="@color/timer_1min"
+        android:valueTo="#FFFF5252"
         android:valueType="colorType"
         android:duration="100" />
     <objectAnimator
         android:propertyName="backgroundTint"
-        android:valueFrom="#FF5252"
-        android:valueTo="#BB86FC"
+        android:valueFrom="#FFFF5252"
+        android:valueTo="@color/timer_1min"
         android:valueType="colorType"
         android:startOffset="100"
         android:duration="100" />
