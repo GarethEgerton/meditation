@@ -19,11 +19,14 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.meditation.R
 import com.example.meditation.databinding.FragmentHomeBinding
 import com.google.android.material.button.MaterialButton
+import androidx.annotation.ColorRes
+import androidx.core.content.ContextCompat
 
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+    private lateinit var viewModel: HomeViewModel
     private lateinit var toneGenerator: ToneGenerator
     private var currentAnimation: ObjectAnimator? = null
     private var pulseAnimations = mutableMapOf<MaterialButton, AnimatorSet>()
@@ -34,48 +37,48 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         // Use activity scope for ViewModel to share data between fragments
-        val homeViewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
+        viewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
 
         // Initialize ToneGenerator for bell sound
         toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
 
         // Set up button click listeners
-        binding.timer1min.setOnClickListener { homeViewModel.handleTimerClick(1) }
-        binding.timer2min.setOnClickListener { homeViewModel.handleTimerClick(2) }
-        binding.timer5min.setOnClickListener { homeViewModel.handleTimerClick(5) }
+        binding.timer1min.setOnClickListener { viewModel.handleTimerClick(1) }
+        binding.timer2min.setOnClickListener { viewModel.handleTimerClick(2) }
+        binding.timer5min.setOnClickListener { viewModel.handleTimerClick(5) }
 
         // Set up cancel button click listeners
-        binding.cancel1min.setOnClickListener { homeViewModel.cancelTimer(1) }
-        binding.cancel2min.setOnClickListener { homeViewModel.cancelTimer(2) }
-        binding.cancel5min.setOnClickListener { homeViewModel.cancelTimer(5) }
+        binding.cancel1min.setOnClickListener { viewModel.cancelTimer(1) }
+        binding.cancel2min.setOnClickListener { viewModel.cancelTimer(2) }
+        binding.cancel5min.setOnClickListener { viewModel.cancelTimer(5) }
 
         // Observe timer text changes
-        homeViewModel.timerOneText.observe(viewLifecycleOwner) {
+        viewModel.timerOneText.observe(viewLifecycleOwner) {
             binding.timer1min.text = it
         }
-        homeViewModel.timerTwoText.observe(viewLifecycleOwner) {
+        viewModel.timerTwoText.observe(viewLifecycleOwner) {
             binding.timer2min.text = it
         }
-        homeViewModel.timerFiveText.observe(viewLifecycleOwner) {
+        viewModel.timerFiveText.observe(viewLifecycleOwner) {
             binding.timer5min.text = it
         }
 
         // Observe timer state
-        homeViewModel.timerState.observe(viewLifecycleOwner) { state ->
+        viewModel.timerState.observe(viewLifecycleOwner) { state ->
             updateCancelButtonsVisibility(state.activeTimer, state.isPaused)
             updateActiveTimerAppearance(state.activeTimer, state.isPaused)
         }
 
         // Observe timer completion
-        homeViewModel.timerFinished.observe(viewLifecycleOwner) { finished ->
+        viewModel.timerFinished.observe(viewLifecycleOwner) { finished ->
             if (finished) {
                 toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1000)
             }
         }
 
         // Observe error events
-        homeViewModel.errorEvent.observe(viewLifecycleOwner) { minutes ->
+        viewModel.errorEvent.observe(viewLifecycleOwner) { minutes ->
             when (minutes) {
                 1 -> showErrorAnimation(binding.timer1min)
                 2 -> showErrorAnimation(binding.timer2min)
@@ -84,39 +87,39 @@ class HomeFragment : Fragment() {
         }
 
         // Observe completion progress
-        observeProgress(homeViewModel)
+        observeProgress(viewModel)
 
         return binding.root
     }
 
-    private fun observeProgress(homeViewModel: HomeViewModel) {
+    private fun observeProgress(viewModel: HomeViewModel) {
         // Observe 1-minute timer progress
-        homeViewModel.oneMinCompletions.observe(viewLifecycleOwner) { completions ->
-            val goal = homeViewModel.oneMinGoal.value
+        viewModel.oneMinCompletions.observe(viewLifecycleOwner) { completions ->
+            val goal = viewModel.oneMinGoal.value
             updateProgressText(binding.progress1min, completions, goal)
         }
-        homeViewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
-            val completions = homeViewModel.oneMinCompletions.value ?: 0
+        viewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
+            val completions = viewModel.oneMinCompletions.value ?: 0
             updateProgressText(binding.progress1min, completions, goal)
         }
 
         // Observe 2-minute timer progress
-        homeViewModel.twoMinCompletions.observe(viewLifecycleOwner) { completions ->
-            val goal = homeViewModel.twoMinGoal.value
+        viewModel.twoMinCompletions.observe(viewLifecycleOwner) { completions ->
+            val goal = viewModel.twoMinGoal.value
             updateProgressText(binding.progress2min, completions, goal)
         }
-        homeViewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
-            val completions = homeViewModel.twoMinCompletions.value ?: 0
+        viewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
+            val completions = viewModel.twoMinCompletions.value ?: 0
             updateProgressText(binding.progress2min, completions, goal)
         }
 
         // Observe 5-minute timer progress
-        homeViewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completions ->
-            val goal = homeViewModel.fiveMinGoal.value
+        viewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completions ->
+            val goal = viewModel.fiveMinGoal.value
             updateProgressText(binding.progress5min, completions, goal)
         }
-        homeViewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
-            val completions = homeViewModel.fiveMinCompletions.value ?: 0
+        viewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
+            val completions = viewModel.fiveMinCompletions.value ?: 0
             updateProgressText(binding.progress5min, completions, goal)
         }
     }
@@ -167,103 +170,54 @@ class HomeFragment : Fragment() {
 
     private fun updateActiveTimerAppearance(activeTimer: Int, isPaused: Boolean) {
         // Update all buttons based on state
-        setButtonAppearance(binding.timer1min, activeTimer, 1, isPaused)
-        setButtonAppearance(binding.timer2min, activeTimer, 2, isPaused)
-        setButtonAppearance(binding.timer5min, activeTimer, 5, isPaused)
+        setButtonAppearance(binding.timer1min, binding.progress1min, 1)
+        setButtonAppearance(binding.timer2min, binding.progress2min, 2)
+        setButtonAppearance(binding.timer5min, binding.progress5min, 5)
     }
 
-    private fun setButtonAppearance(button: MaterialButton, activeTimer: Int, buttonMinutes: Int, isPaused: Boolean) {
-        // Cancel any existing pulse animation
-        pulseAnimations[button]?.cancel()
-        pulseAnimations.remove(button)
+    private fun setButtonAppearance(button: MaterialButton, progressText: TextView, minutes: Int) {
+        val timerState = viewModel.timerState.value
+        val isActiveTimer = timerState?.activeTimer == minutes
+        val isAnyTimerActive = timerState?.activeTimer != 0
+        val isInactive = isAnyTimerActive && !isActiveTimer
 
-        val baseColor = when (button.id) {
-            R.id.timer_1min -> resources.getColor(R.color.timer_1min, null)
-            R.id.timer_2min -> resources.getColor(R.color.timer_2min, null)
-            else -> resources.getColor(R.color.timer_5min, null)
+        val colorResId = when (minutes) {
+            1 -> if (isInactive) R.color.timer_1min_inactive else R.color.timer_1min
+            2 -> if (isInactive) R.color.timer_2min_inactive else R.color.timer_2min
+            5 -> if (isInactive) R.color.timer_5min_inactive else R.color.timer_5min
+            else -> R.color.black
         }
 
-        val pausedColor = when (button.id) {
-            R.id.timer_1min -> resources.getColor(R.color.timer_1min_paused, null)
-            R.id.timer_2min -> resources.getColor(R.color.timer_2min_paused, null)
-            else -> resources.getColor(R.color.timer_5min_paused, null)
+        if (isInactive) {
+            animateButtonState(button, progressText, colorResId, 0.5f)
+        } else {
+            animateButtonState(button, progressText, colorResId, 1.0f)
         }
 
-        val inactiveColor = when (button.id) {
-            R.id.timer_1min -> resources.getColor(R.color.timer_1min_inactive, null)
-            R.id.timer_2min -> resources.getColor(R.color.timer_2min_inactive, null)
-            else -> resources.getColor(R.color.timer_5min_inactive, null)
-        }
-
-        button.apply {
-            when {
-                // This is the active timer
-                activeTimer == buttonMinutes -> {
-                    if (isPaused) {
-                        // Paused state appearance
-                        strokeWidth = resources.getDimensionPixelSize(R.dimen.button_stroke_width)
-                        strokeColor = ColorStateList.valueOf(baseColor)
-                        animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, pausedColor, 1.0f)
-                        isEnabled = true
-                    } else {
-                        // Active state appearance
-                        strokeWidth = 0
-                        animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, baseColor, 1.0f)
-                        elevation = resources.getDimension(R.dimen.active_button_elevation)
-                        isEnabled = true
-                        
-                        // Start pulsing animation
-                        val pulseAnimation = AnimatorInflater.loadAnimator(
-                            context,
-                            R.anim.button_pulse
-                        ) as AnimatorSet
-                        pulseAnimation.setTarget(this)
-                        pulseAnimation.start()
-                        pulseAnimations[button] = pulseAnimation
-                    }
-                }
-                // Another timer is active
-                activeTimer != 0 -> {
-                    // Inactive state appearance
-                    strokeWidth = 0
-                    animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, inactiveColor, 0.5f)
-                    elevation = 0f
-                    isEnabled = false
-                    scaleX = 1.0f
-                    scaleY = 1.0f
-                }
-                // No timer is active
-                else -> {
-                    // Default state appearance
-                    strokeWidth = 0
-                    animateButtonState(this, backgroundTintList?.defaultColor ?: baseColor, baseColor, 1.0f)
-                    elevation = resources.getDimension(R.dimen.default_button_elevation)
-                    isEnabled = true
-                    scaleX = 1.0f
-                    scaleY = 1.0f
-                }
-            }
-        }
+        button.isEnabled = !isInactive
     }
 
-    private fun animateButtonState(button: MaterialButton, fromColor: Int, toColor: Int, targetAlpha: Float) {
-        // Color animation
-        ValueAnimator.ofObject(ArgbEvaluator(), fromColor, toColor).apply {
-            duration = 500 // 0.5 seconds
-            addUpdateListener { animator ->
-                button.backgroundTintList = ColorStateList.valueOf(animator.animatedValue as Int)
-            }
-            start()
-        }
+    private fun animateButtonState(button: MaterialButton, progressText: TextView, @ColorRes colorResId: Int, targetAlpha: Float) {
+        val context = button.context
+        val color = ContextCompat.getColor(context, colorResId)
+        
+        button.animate()
+            .alpha(targetAlpha)
+            .setDuration(500)
+            .start()
+            
+        progressText.animate()
+            .alpha(targetAlpha)
+            .setDuration(500)
+            .start()
 
-        // Alpha animation
-        ValueAnimator.ofFloat(button.alpha, targetAlpha).apply {
-            duration = 500 // 0.5 seconds
-            addUpdateListener { animator ->
-                button.alpha = animator.animatedValue as Float
-            }
-            start()
+        val colorAnimator = ValueAnimator.ofObject(ArgbEvaluator(), button.backgroundTintList?.defaultColor, color)
+        colorAnimator.duration = 500
+        colorAnimator.addUpdateListener { animator ->
+            button.backgroundTintList = ColorStateList.valueOf(animator.animatedValue as Int)
+            progressText.setTextColor(animator.animatedValue as Int)
         }
+        colorAnimator.start()
     }
 
     override fun onDestroyView() {
