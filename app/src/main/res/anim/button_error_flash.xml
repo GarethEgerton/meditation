@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="200">
+    <objectAnimator
+        android:propertyName="backgroundTint"
+        android:valueFrom="#BB86FC"
+        android:valueTo="#FF5252"
+        android:valueType="colorType"
+        android:duration="100" />
+    <objectAnimator
+        android:propertyName="backgroundTint"
+        android:valueFrom="#FF5252"
+        android:valueTo="#BB86FC"
+        android:valueType="colorType"
+        android:startOffset="100"
+        android:duration="100" />
+</set> 

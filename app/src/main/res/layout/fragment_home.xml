@@ -17,38 +17,86 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/timer_1min"
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="8dp"
-            android:text="1:00"
-            android:textSize="24sp"
-            android:backgroundTint="#BB86FC"
-            app:cornerRadius="50dp" />
+            android:layout_height="160dp"
+            android:layout_weight="1">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/timer_2min"
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="8dp"
-            android:text="2:00"
-            android:textSize="24sp"
-            android:backgroundTint="#BB86FC"
-            app:cornerRadius="50dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/timer_1min"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginHorizontal="8dp"
+                android:text="1:00"
+                android:textSize="24sp"
+                android:backgroundTint="#BB86FC"
+                app:cornerRadius="50dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/timer_5min"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancel_1min"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|bottom"
+                android:text="Cancel"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:textColor="#BB86FC" />
+        </FrameLayout>
+
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="8dp"
-            android:text="5:00"
-            android:textSize="24sp"
-            android:backgroundTint="#BB86FC"
-            app:cornerRadius="50dp" />
+            android:layout_height="160dp"
+            android:layout_weight="1">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/timer_2min"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginHorizontal="8dp"
+                android:text="2:00"
+                android:textSize="24sp"
+                android:backgroundTint="#BB86FC"
+                app:cornerRadius="50dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancel_2min"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|bottom"
+                android:text="Cancel"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:textColor="#BB86FC" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="160dp"
+            android:layout_weight="1">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/timer_5min"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginHorizontal="8dp"
+                android:text="5:00"
+                android:textSize="24sp"
+                android:backgroundTint="#BB86FC"
+                app:cornerRadius="50dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancel_5min"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|bottom"
+                android:text="Cancel"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:textColor="#BB86FC" />
+        </FrameLayout>
 
     </LinearLayout>
 
