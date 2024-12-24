@@ -26,38 +26,48 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
 
     private fun loadStats() {
         viewModelScope.launch {
-            repository.getAllCompletions().collect { completions ->
-                val today = LocalDate.now()
-                val twoWeeksAgo = today.minusDays(13) // 14 days including today
+            // Collect both goals and completions
+            repository.getAllGoals().collect { goals ->
+                repository.getAllCompletions().collect { completions ->
+                    val today = LocalDate.now()
+                    val twoWeeksAgo = today.minusDays(13) // 14 days including today
 
-                val statsMap = mutableMapOf<LocalDate, MutableList<MeditationCompletion>>()
-                
-                // Initialize the map with all dates
-                for (i in 0..13) {
-                    val date = today.minusDays(i.toLong())
-                    statsMap[date] = mutableListOf()
-                }
-
-                // Group completions by date
-                completions.forEach { completion ->
-                    val date = LocalDate.parse(completion.date)
-                    if (date >= twoWeeksAgo && date <= today) {
-                        statsMap[date]?.add(completion)
-                    }
-                }
-
-                // Convert to StatsRow objects
-                val stats = statsMap.entries
-                    .sortedByDescending { it.key }
-                    .map { (date, completions) ->
-                        StatsRow(
-                            date = date,
-                            totalMinutes = completions.sumOf { it.timerMinutes },
-                            totalSessions = completions.size
-                        )
+                    val statsMap = mutableMapOf<LocalDate, MutableList<MeditationCompletion>>()
+                    
+                    // Initialize the map with all dates
+                    for (i in 0..13) {
+                        val date = today.minusDays(i.toLong())
+                        statsMap[date] = mutableListOf()
                     }
 
-                _statsRows.value = stats
+                    // Group completions by date
+                    completions.forEach { completion ->
+                        val date = LocalDate.parse(completion.date)
+                        if (date >= twoWeeksAgo && date <= today) {
+                            statsMap[date]?.add(completion)
+                        }
+                    }
+
+                    // Convert to StatsRow objects
+                    val stats = statsMap.entries
+                        .sortedByDescending { it.key }
+                        .map { (date, dayCompletions) ->
+                            // Check if all goals were met for this day
+                            val isGoalCompleted = goals.all { goal ->
+                                val completionsForTimer = dayCompletions.count { it.timerMinutes == goal.timerMinutes }
+                                completionsForTimer >= goal.timesPerDay
+                            }
+
+                            StatsRow(
+                                date = date,
+                                totalMinutes = dayCompletions.sumOf { it.timerMinutes },
+                                totalSessions = dayCompletions.size,
+                                isGoalCompleted = isGoalCompleted && goals.isNotEmpty()
+                            )
+                        }
+
+                    _statsRows.value = stats
+                }
             }
         }
     }

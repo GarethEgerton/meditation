@@ -9,7 +9,8 @@ import java.time.LocalDate
 data class StatsRow(
     val date: LocalDate,
     val totalMinutes: Int,
-    val totalSessions: Int
+    val totalSessions: Int,
+    val isGoalCompleted: Boolean = false
 )
 
 class StatsAdapter : RecyclerView.Adapter<StatsAdapter.StatsViewHolder>() {
@@ -17,6 +18,7 @@ class StatsAdapter : RecyclerView.Adapter<StatsAdapter.StatsViewHolder>() {
 
     class StatsViewHolder(private val binding: ItemStatsRowBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(stats: StatsRow) {
+            binding.root.isActivated = stats.isGoalCompleted
             binding.dateText.text = stats.date.toString()
             binding.dayText.text = stats.date.dayOfWeek.toString().substring(0, 3)
             binding.timeText.text = stats.totalMinutes.toString()
