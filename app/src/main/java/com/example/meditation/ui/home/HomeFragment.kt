@@ -7,15 +7,14 @@ import android.animation.ValueAnimator
 import android.animation.AnimatorSet
 import android.content.res.ColorStateList
 import android.graphics.Color
-import android.media.ToneGenerator
-import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import com.example.meditation.R
 import com.example.meditation.databinding.FragmentHomeBinding
 import com.google.android.material.button.MaterialButton
@@ -26,8 +25,8 @@ class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private lateinit var viewModel: HomeViewModel
-    private lateinit var toneGenerator: ToneGenerator
+    private val viewModel: HomeViewModel by viewModels()
+    private var mediaPlayer: MediaPlayer? = null
     private var currentAnimation: ObjectAnimator? = null
     private var pulseAnimations = mutableMapOf<MaterialButton, AnimatorSet>()
 
@@ -36,15 +35,7 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Use activity scope for ViewModel to share data between fragments
-        viewModel = ViewModelProvider(
-            requireActivity(),
-            ViewModelProvider.AndroidViewModelFactory(requireActivity().application)
-        ).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-
-        // Initialize ToneGenerator for bell sound
-        toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
 
         // Set up button click listeners
         binding.timer1min.setOnClickListener { viewModel.handleTimerClick(1) }
@@ -76,7 +67,7 @@ class HomeFragment : Fragment() {
         // Observe timer completion
         viewModel.timerFinished.observe(viewLifecycleOwner) { finished ->
             if (finished) {
-                toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1000)
+                playTimerCompletionSound()
             }
         }
 
@@ -97,35 +88,63 @@ class HomeFragment : Fragment() {
 
     private fun observeProgress() {
         // Observe 1-minute timer progress
-        viewModel.oneMinCompletions.observe(viewLifecycleOwner) { completions ->
+        viewModel.oneMinCompletions.observe(viewLifecycleOwner) { completionState ->
             viewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
-                updateProgressText(binding.progress1min, completions, goal)
+                updateProgressText(binding.progress1min, completionState.count, goal, completionState.isToday)
             }
         }
 
         // Observe 2-minute timer progress
-        viewModel.twoMinCompletions.observe(viewLifecycleOwner) { completions ->
+        viewModel.twoMinCompletions.observe(viewLifecycleOwner) { completionState ->
             viewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
-                updateProgressText(binding.progress2min, completions, goal)
+                updateProgressText(binding.progress2min, completionState.count, goal, completionState.isToday)
             }
         }
 
         // Observe 5-minute timer progress
-        viewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completions ->
+        viewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completionState ->
             viewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
-                updateProgressText(binding.progress5min, completions, goal)
+                updateProgressText(binding.progress5min, completionState.count, goal, completionState.isToday)
             }
         }
     }
 
-    private fun updateProgressText(textView: TextView, completions: Int, goal: Int?) {
+    private fun updateProgressText(textView: TextView, completions: Int, goal: Int?, isToday: Boolean) {
         textView.apply {
-            if (goal == null) {
+            if (goal == null || goal == 0) {
                 visibility = View.GONE
             } else {
                 visibility = View.VISIBLE
                 text = "$completions/$goal"
-                alpha = if (completions >= goal) 1.0f else 0.8f
+                
+                // Get the base color for the timer
+                val baseColor = when (id) {
+                    R.id.progress_1min -> R.color.timer_1min
+                    R.id.progress_2min -> R.color.timer_2min
+                    R.id.progress_5min -> R.color.timer_5min
+                    else -> R.color.black
+                }
+
+                // If goal is not met for a previous day, show in red with a subtle animation
+                if (completions < goal && !isToday) {
+                    val errorColor = Color.parseColor("#FFFF5252")
+                    val baseColorValue = ContextCompat.getColor(context, baseColor)
+                    
+                    ValueAnimator.ofObject(ArgbEvaluator(), baseColorValue, errorColor).apply {
+                        duration = 1500
+                        repeatMode = ValueAnimator.REVERSE
+                        repeatCount = ValueAnimator.INFINITE
+                        addUpdateListener { animator ->
+                            setTextColor(animator.animatedValue as Int)
+                        }
+                        start()
+                    }
+                    alpha = 1.0f
+                } else {
+                    // Goal is met or it's today, use normal color
+                    setTextColor(ContextCompat.getColor(context, baseColor))
+                    alpha = if (completions >= goal) 1.0f else 0.8f
+                }
             }
         }
     }
@@ -240,12 +259,23 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun playTimerCompletionSound() {
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.bell_end_timer)
+        mediaPlayer?.setOnCompletionListener { mp ->
+            mp.release()
+            mediaPlayer = null
+        }
+        mediaPlayer?.start()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         // Cancel all animations
         pulseAnimations.values.forEach { it.cancel() }
         pulseAnimations.clear()
         _binding = null
-        toneGenerator.release()
+        mediaPlayer?.release()
+        mediaPlayer = null
     }
 }

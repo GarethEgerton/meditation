@@ -37,9 +37,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val twoMinGoal: LiveData<Int>
     val fiveMinGoal: LiveData<Int>
 
-    val oneMinCompletions: LiveData<Int>
-    val twoMinCompletions: LiveData<Int>
-    val fiveMinCompletions: LiveData<Int>
+    data class CompletionState(
+        val count: Int,
+        val isToday: Boolean
+    )
+
+    private val _oneMinCompletions = MutableLiveData<CompletionState>()
+    private val _twoMinCompletions = MutableLiveData<CompletionState>()
+    private val _fiveMinCompletions = MutableLiveData<CompletionState>()
+
+    val oneMinCompletions: LiveData<CompletionState> = _oneMinCompletions
+    val twoMinCompletions: LiveData<CompletionState> = _twoMinCompletions
+    val fiveMinCompletions: LiveData<CompletionState> = _fiveMinCompletions
 
     init {
         val database = MeditationDatabase.getDatabase(application)
@@ -58,10 +67,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             .map { it?.timesPerDay ?: 0 }
             .asLiveData()
 
-        // Initialize completions from database
-        oneMinCompletions = repository.getTodayCompletionCount(1).asLiveData()
-        twoMinCompletions = repository.getTodayCompletionCount(2).asLiveData()
-        fiveMinCompletions = repository.getTodayCompletionCount(5).asLiveData()
+        // Initialize completions from database with today flag
+        viewModelScope.launch {
+            repository.getTodayCompletionCount(1).collect { count ->
+                _oneMinCompletions.value = CompletionState(count, true)
+            }
+        }
+
+        viewModelScope.launch {
+            repository.getTodayCompletionCount(2).collect { count ->
+                _twoMinCompletions.value = CompletionState(count, true)
+            }
+        }
+
+        viewModelScope.launch {
+            repository.getTodayCompletionCount(5).collect { count ->
+                _fiveMinCompletions.value = CompletionState(count, true)
+            }
+        }
     }
 
     fun handleTimerClick(minutes: Int) {
