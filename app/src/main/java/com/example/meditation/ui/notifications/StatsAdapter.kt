@@ -10,7 +10,13 @@ data class StatsRow(
     val date: LocalDate,
     val totalMinutes: Int,
     val totalSessions: Int,
-    val isGoalCompleted: Boolean = false
+    val isGoalCompleted: Boolean = false,
+    val oneMinGoal: Int = 0,
+    val twoMinGoal: Int = 0,
+    val fiveMinGoal: Int = 0,
+    val oneMinCompletions: Int = 0,
+    val twoMinCompletions: Int = 0,
+    val fiveMinCompletions: Int = 0
 )
 
 class StatsAdapter : RecyclerView.Adapter<StatsAdapter.StatsViewHolder>() {
@@ -23,6 +29,9 @@ class StatsAdapter : RecyclerView.Adapter<StatsAdapter.StatsViewHolder>() {
             binding.dayText.text = stats.date.dayOfWeek.toString().substring(0, 3)
             binding.timeText.text = stats.totalMinutes.toString()
             binding.sessionsText.text = stats.totalSessions.toString()
+            binding.oneMinGoalText.text = if (stats.oneMinGoal > 0) "${stats.oneMinCompletions}/${stats.oneMinGoal}" else "-"
+            binding.twoMinGoalText.text = if (stats.twoMinGoal > 0) "${stats.twoMinCompletions}/${stats.twoMinGoal}" else "-"
+            binding.fiveMinGoalText.text = if (stats.fiveMinGoal > 0) "${stats.fiveMinCompletions}/${stats.fiveMinGoal}" else "-"
         }
     }
 

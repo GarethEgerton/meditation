@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [MeditationGoal::class, MeditationCompletion::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class MeditationDatabase : RoomDatabase() {
@@ -23,7 +23,9 @@ abstract class MeditationDatabase : RoomDatabase() {
                     context.applicationContext,
                     MeditationDatabase::class.java,
                     "meditation_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

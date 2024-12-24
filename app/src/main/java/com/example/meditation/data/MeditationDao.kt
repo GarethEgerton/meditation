@@ -12,6 +12,16 @@ interface MeditationDao {
     @Query("SELECT * FROM meditation_goals WHERE timerMinutes = :minutes")
     fun getGoalForTimer(minutes: Int): Flow<MeditationGoal?>
 
+    @Query("""
+        SELECT * FROM meditation_goals WHERE timerMinutes IN (
+            SELECT timerMinutes FROM meditation_goals 
+            WHERE timestamp <= :timestamp 
+            GROUP BY timerMinutes 
+            HAVING MAX(timestamp) <= :timestamp
+        )
+    """)
+    suspend fun getGoalsActiveAtTime(timestamp: Long): List<MeditationGoal>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGoal(goal: MeditationGoal)
 

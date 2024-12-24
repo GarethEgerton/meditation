@@ -43,4 +43,31 @@
         android:gravity="end"
         android:alpha="0.87" />
 
+    <TextView
+        android:id="@+id/one_min_goal_text"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:gravity="end"
+        android:alpha="0.87" />
+
+    <TextView
+        android:id="@+id/two_min_goal_text"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:gravity="end"
+        android:alpha="0.87" />
+
+    <TextView
+        android:id="@+id/five_min_goal_text"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:gravity="end"
+        android:alpha="0.87" />
+
 </LinearLayout> 

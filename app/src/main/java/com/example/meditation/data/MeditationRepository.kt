@@ -13,6 +13,9 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
     fun getGoalForTimer(minutes: Int): Flow<MeditationGoal?> = 
         meditationDao.getGoalForTimer(minutes)
 
+    suspend fun getGoalsActiveAtTime(timestamp: Long): List<MeditationGoal> =
+        meditationDao.getGoalsActiveAtTime(timestamp)
+
     suspend fun updateGoal(minutes: Int, timesPerDay: Int) {
         meditationDao.insertGoal(MeditationGoal(minutes, timesPerDay))
     }

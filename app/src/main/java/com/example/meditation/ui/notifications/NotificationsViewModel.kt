@@ -8,7 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.meditation.data.MeditationCompletion
 import com.example.meditation.data.MeditationDatabase
 import com.example.meditation.data.MeditationRepository
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -26,48 +27,73 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
 
     private fun loadStats() {
         viewModelScope.launch {
-            // Collect both goals and completions
-            repository.getAllGoals().collect { goals ->
-                repository.getAllCompletions().collect { completions ->
-                    val today = LocalDate.now()
-                    val twoWeeksAgo = today.minusDays(13) // 14 days including today
+            // Combine goals and completions flows to update whenever either changes
+            repository.getAllGoals().combine(repository.getAllCompletions()) { goals, completions ->
+                val today = LocalDate.now()
+                val twoWeeksAgo = today.minusDays(13) // 14 days including today
 
-                    val statsMap = mutableMapOf<LocalDate, MutableList<MeditationCompletion>>()
-                    
-                    // Initialize the map with all dates
-                    for (i in 0..13) {
-                        val date = today.minusDays(i.toLong())
-                        statsMap[date] = mutableListOf()
-                    }
-
-                    // Group completions by date
-                    completions.forEach { completion ->
-                        val date = LocalDate.parse(completion.date)
-                        if (date >= twoWeeksAgo && date <= today) {
-                            statsMap[date]?.add(completion)
-                        }
-                    }
-
-                    // Convert to StatsRow objects
-                    val stats = statsMap.entries
-                        .sortedByDescending { it.key }
-                        .map { (date, dayCompletions) ->
-                            // Check if all goals were met for this day
-                            val isGoalCompleted = goals.all { goal ->
-                                val completionsForTimer = dayCompletions.count { it.timerMinutes == goal.timerMinutes }
-                                completionsForTimer >= goal.timesPerDay
-                            }
-
-                            StatsRow(
-                                date = date,
-                                totalMinutes = dayCompletions.sumOf { it.timerMinutes },
-                                totalSessions = dayCompletions.size,
-                                isGoalCompleted = isGoalCompleted && goals.isNotEmpty()
-                            )
-                        }
-
-                    _statsRows.value = stats
+                val statsMap = mutableMapOf<LocalDate, MutableList<MeditationCompletion>>()
+                
+                // Initialize the map with all dates
+                for (i in 0..13) {
+                    val date = today.minusDays(i.toLong())
+                    statsMap[date] = mutableListOf()
                 }
+
+                // Group completions by date
+                completions.forEach { completion ->
+                    val date = LocalDate.parse(completion.date)
+                    if (date >= twoWeeksAgo && date <= today) {
+                        statsMap[date]?.add(completion)
+                    }
+                }
+
+                // Convert to StatsRow objects
+                statsMap.entries
+                    .sortedByDescending { it.key }
+                    .map { (date, dayCompletions) ->
+                        // Get goals that were active at the end of this day
+                        val endOfDay = date.plusDays(1).atStartOfDay().minusNanos(1)
+                        val timestamp = endOfDay.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+                        
+                        // For today, use current goals instead of historical ones
+                        val historicalGoals = if (date == today) {
+                            goals
+                        } else {
+                            repository.getGoalsActiveAtTime(timestamp)
+                        }
+
+                        // Calculate completions for each timer
+                        val oneMinCompletions = dayCompletions.count { it.timerMinutes == 1 }
+                        val twoMinCompletions = dayCompletions.count { it.timerMinutes == 2 }
+                        val fiveMinCompletions = dayCompletions.count { it.timerMinutes == 5 }
+
+                        // Get goals for each timer
+                        val oneMinGoal = historicalGoals.find { it.timerMinutes == 1 }?.timesPerDay ?: 0
+                        val twoMinGoal = historicalGoals.find { it.timerMinutes == 2 }?.timesPerDay ?: 0
+                        val fiveMinGoal = historicalGoals.find { it.timerMinutes == 5 }?.timesPerDay ?: 0
+
+                        // Check if all goals were met for this day
+                        val isGoalCompleted = historicalGoals.all { goal ->
+                            val completionsForTimer = dayCompletions.count { it.timerMinutes == goal.timerMinutes }
+                            completionsForTimer >= goal.timesPerDay
+                        }
+
+                        StatsRow(
+                            date = date,
+                            totalMinutes = dayCompletions.sumOf { it.timerMinutes },
+                            totalSessions = dayCompletions.size,
+                            isGoalCompleted = isGoalCompleted && historicalGoals.isNotEmpty(),
+                            oneMinGoal = oneMinGoal,
+                            twoMinGoal = twoMinGoal,
+                            fiveMinGoal = fiveMinGoal,
+                            oneMinCompletions = oneMinCompletions,
+                            twoMinCompletions = twoMinCompletions,
+                            fiveMinCompletions = fiveMinCompletions
+                        )
+                    }
+            }.collectLatest { stats ->
+                _statsRows.value = stats
             }
         }
     }

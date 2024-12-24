@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 data class MeditationGoal(
     @PrimaryKey
     val timerMinutes: Int,  // 1, 2, or 5 minutes
-    val timesPerDay: Int  // Daily goal for this timer
+    val timesPerDay: Int,  // Daily goal for this timer
+    val timestamp: Long = System.currentTimeMillis()  // When this goal was set
 )
 
 @Entity(tableName = "meditation_completions")
