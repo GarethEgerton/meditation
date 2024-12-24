@@ -37,7 +37,9 @@
                     android:text="1:00"
                     android:textSize="24sp"
                     android:backgroundTint="@color/timer_1min"
-                    app:cornerRadius="50dp" />
+                    app:cornerRadius="50dp"
+                    app:strokeWidth="0dp"
+                    app:strokeColor="@color/timer_1min" />
 
                 <TextView
                     android:id="@+id/progress_1min"
@@ -98,7 +100,9 @@
                     android:text="2:00"
                     android:textSize="24sp"
                     android:backgroundTint="@color/timer_2min"
-                    app:cornerRadius="50dp" />
+                    app:cornerRadius="50dp"
+                    app:strokeWidth="0dp"
+                    app:strokeColor="@color/timer_2min" />
 
                 <TextView
                     android:id="@+id/progress_2min"
@@ -159,7 +163,9 @@
                     android:text="5:00"
                     android:textSize="24sp"
                     android:backgroundTint="@color/timer_5min"
-                    app:cornerRadius="50dp" />
+                    app:cornerRadius="50dp"
+                    app:strokeWidth="0dp"
+                    app:strokeColor="@color/timer_5min" />
 
                 <TextView
                     android:id="@+id/progress_5min"

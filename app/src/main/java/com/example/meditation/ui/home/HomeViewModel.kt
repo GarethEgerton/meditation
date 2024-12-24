@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MeditationRepository
     private var timerJob: Job? = null
+    private var remainingSeconds: Int = 0
 
     private val _timerState = MutableLiveData(TimerState(0, false))
     val timerState: LiveData<TimerState> = _timerState
@@ -81,12 +82,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun startTimer(minutes: Int) {
         _timerState.value = TimerState(minutes, false)
+        remainingSeconds = minutes * 60
         startCountdown(minutes)
     }
 
     private fun resumeTimer(minutes: Int) {
         _timerState.value = TimerState(minutes, false)
-        startCountdown(minutes)
+        startCountdown(minutes, remainingSeconds)
     }
 
     private fun pauseTimer() {
@@ -98,15 +100,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         if (_timerState.value?.activeTimer == minutes) {
             timerJob?.cancel()
             _timerState.value = TimerState(0, false)
+            remainingSeconds = 0
             resetTimerText(minutes)
         }
     }
 
-    private fun startCountdown(minutes: Int) {
+    private fun startCountdown(minutes: Int, startFromSeconds: Int = minutes * 60) {
         timerJob?.cancel()
         
-        val totalSeconds = minutes * 60
-        var remainingSeconds = totalSeconds
+        remainingSeconds = startFromSeconds
 
         timerJob = viewModelScope.launch {
             while (remainingSeconds > 0) {
@@ -117,6 +119,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             
             // Timer completed
             _timerState.value = TimerState(0, false)
+            remainingSeconds = 0
             resetTimerText(minutes)
             _timerFinished.value = true
             _timerFinished.value = false

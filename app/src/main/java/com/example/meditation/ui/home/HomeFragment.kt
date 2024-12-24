@@ -174,24 +174,41 @@ class HomeFragment : Fragment() {
         val isActiveTimer = timerState?.activeTimer == minutes
         val isAnyTimerActive = timerState?.activeTimer != 0
         val isInactive = isAnyTimerActive && !isActiveTimer
+        val isPaused = isActiveTimer && timerState?.isPaused == true
 
-        val colorResId = when (minutes) {
-            1 -> if (isInactive) R.color.timer_1min_inactive else R.color.timer_1min
-            2 -> if (isInactive) R.color.timer_2min_inactive else R.color.timer_2min
-            5 -> if (isInactive) R.color.timer_5min_inactive else R.color.timer_5min
-            else -> R.color.black
+        val colorResId = when {
+            isInactive -> when (minutes) {
+                1 -> R.color.timer_1min_inactive
+                2 -> R.color.timer_2min_inactive
+                5 -> R.color.timer_5min_inactive
+                else -> R.color.black
+            }
+            isPaused -> when (minutes) {
+                1 -> R.color.timer_1min_paused
+                2 -> R.color.timer_2min_paused
+                5 -> R.color.timer_5min_paused
+                else -> R.color.black
+            }
+            else -> when (minutes) {
+                1 -> R.color.timer_1min
+                2 -> R.color.timer_2min
+                5 -> R.color.timer_5min
+                else -> R.color.black
+            }
         }
 
         if (isInactive) {
-            animateButtonState(button, progressText, colorResId, 0.5f)
+            animateButtonState(button, progressText, colorResId, 0.5f, 0)
+        } else if (isPaused) {
+            animateButtonState(button, progressText, colorResId, 0.8f, resources.getDimensionPixelSize(R.dimen.button_stroke_width))
         } else {
-            animateButtonState(button, progressText, colorResId, 1.0f)
+            animateButtonState(button, progressText, colorResId, 1.0f, 0)
         }
 
         button.isEnabled = !isInactive
     }
 
-    private fun animateButtonState(button: MaterialButton, progressText: TextView, @ColorRes colorResId: Int, targetAlpha: Float) {
+    private fun animateButtonState(button: MaterialButton, progressText: TextView, @ColorRes colorResId: Int, targetAlpha: Float, strokeWidth: Int) {
         val context = button.context
         val color = ContextCompat.getColor(context, colorResId)
         
@@ -212,6 +229,15 @@ class HomeFragment : Fragment() {
             progressText.setTextColor(animator.animatedValue as Int)
         }
         colorAnimator.start()
+
+        // Animate stroke width
+        ValueAnimator.ofInt(button.strokeWidth, strokeWidth).apply {
+            duration = 500
+            addUpdateListener { animator ->
+                button.strokeWidth = animator.animatedValue as Int
+            }
+            start()
+        }
     }
 
     override fun onDestroyView() {
