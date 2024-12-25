@@ -9,20 +9,23 @@ interface MeditationDao {
     @Query("SELECT * FROM meditation_goals")
     fun getAllGoals(): Flow<List<MeditationGoal>>
 
-    @Query("SELECT * FROM meditation_goals WHERE timerMinutes = :minutes")
+    @Query("""
+        SELECT * FROM meditation_goals 
+        WHERE timerMinutes = :minutes 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    """)
     fun getGoalForTimer(minutes: Int): Flow<MeditationGoal?>
 
     @Query("""
-        SELECT * FROM meditation_goals WHERE timerMinutes IN (
-            SELECT timerMinutes FROM meditation_goals 
-            WHERE timestamp <= :timestamp 
-            GROUP BY timerMinutes 
-            HAVING MAX(timestamp) <= :timestamp
-        )
+        SELECT * FROM meditation_goals 
+        WHERE timestamp <= :timestamp
+        GROUP BY timerMinutes
+        HAVING MAX(timestamp) <= :timestamp
     """)
     suspend fun getGoalsActiveAtTime(timestamp: Long): List<MeditationGoal>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insertGoal(goal: MeditationGoal)
 
     // Completion operations
@@ -40,4 +43,7 @@ interface MeditationDao {
 
     @Query("DELETE FROM meditation_completions WHERE date < :date")
     suspend fun deleteCompletionsBeforeDate(date: String)
+
+    @Query("SELECT COUNT(*) FROM meditation_completions WHERE date = :date AND timerMinutes = :minutes")
+    suspend fun getCompletionCountForDateSync(date: String, minutes: Int): Int
 } 

@@ -49,4 +49,8 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
         val cutoffDate = LocalDate.now().minusDays(daysToKeep.toLong()).format(dateFormatter)
         meditationDao.deleteCompletionsBeforeDate(cutoffDate)
     }
+
+    suspend fun getCompletionCountForDate(date: LocalDate, minutes: Int): Int {
+        return meditationDao.getCompletionCountForDateSync(date.format(dateFormatter), minutes)
+    }
 } 

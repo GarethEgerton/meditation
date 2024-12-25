@@ -29,9 +29,14 @@ class StatsAdapter : RecyclerView.Adapter<StatsAdapter.StatsViewHolder>() {
             binding.dayText.text = stats.date.dayOfWeek.toString().substring(0, 3)
             binding.timeText.text = stats.totalMinutes.toString()
             binding.sessionsText.text = stats.totalSessions.toString()
-            binding.oneMinGoalText.text = if (stats.oneMinGoal > 0) "${stats.oneMinCompletions}/${stats.oneMinGoal}" else "-"
-            binding.twoMinGoalText.text = if (stats.twoMinGoal > 0) "${stats.twoMinCompletions}/${stats.twoMinGoal}" else "-"
-            binding.fiveMinGoalText.text = if (stats.fiveMinGoal > 0) "${stats.fiveMinCompletions}/${stats.fiveMinGoal}" else "-"
+            
+            // Show completions even when there's no goal
+            binding.oneMinGoalText.text = if (stats.oneMinCompletions > 0 || stats.oneMinGoal > 0) 
+                "${stats.oneMinCompletions}/${stats.oneMinGoal}" else "-"
+            binding.twoMinGoalText.text = if (stats.twoMinCompletions > 0 || stats.twoMinGoal > 0) 
+                "${stats.twoMinCompletions}/${stats.twoMinGoal}" else "-"
+            binding.fiveMinGoalText.text = if (stats.fiveMinCompletions > 0 || stats.fiveMinGoal > 0) 
+                "${stats.fiveMinCompletions}/${stats.fiveMinGoal}" else "-"
         }
     }
 

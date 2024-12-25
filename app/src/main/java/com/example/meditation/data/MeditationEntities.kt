@@ -3,9 +3,11 @@ package com.example.meditation.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "meditation_goals")
+@Entity(
+    tableName = "meditation_goals",
+    primaryKeys = ["timerMinutes", "timestamp"]
+)
 data class MeditationGoal(
-    @PrimaryKey
     val timerMinutes: Int,  // 1, 2, or 5 minutes
     val timesPerDay: Int,  // Daily goal for this timer
     val timestamp: Long = System.currentTimeMillis()  // When this goal was set

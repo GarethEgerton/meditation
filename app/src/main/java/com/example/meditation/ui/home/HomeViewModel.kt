@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MeditationRepository
@@ -69,6 +70,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         // Initialize completions from database with today flag
         viewModelScope.launch {
+            // Get today's date
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+
+            // First check yesterday's completions
+            val yesterdayOneMin = repository.getCompletionCountForDate(yesterday, 1)
+            val yesterdayTwoMin = repository.getCompletionCountForDate(yesterday, 2)
+            val yesterdayFiveMin = repository.getCompletionCountForDate(yesterday, 5)
+
+            // If there are any completions from yesterday, show those first
+            if (yesterdayOneMin > 0 || yesterdayTwoMin > 0 || yesterdayFiveMin > 0) {
+                _oneMinCompletions.value = CompletionState(yesterdayOneMin, false)
+                _twoMinCompletions.value = CompletionState(yesterdayTwoMin, false)
+                _fiveMinCompletions.value = CompletionState(yesterdayFiveMin, false)
+            }
+
+            // Then start observing today's completions
             repository.getTodayCompletionCount(1).collect { count ->
                 _oneMinCompletions.value = CompletionState(count, true)
             }
