@@ -8,7 +8,7 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     // Goal operations
-    fun getAllGoals(): Flow<List<MeditationGoal>> = meditationDao.getAllGoals()
+    fun getAllGoals(): Flow<List<MeditationGoal>> = meditationDao.getAllCurrentGoals()
 
     fun getGoalForTimer(minutes: Int): Flow<MeditationGoal?> = 
         meditationDao.getGoalForTimer(minutes)
@@ -17,7 +17,9 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
         meditationDao.getGoalsActiveAtTime(timestamp)
 
     suspend fun updateGoal(minutes: Int, timesPerDay: Int) {
-        meditationDao.insertGoal(MeditationGoal(minutes, timesPerDay))
+        val goal = MeditationGoal(minutes, timesPerDay)
+        println("Updating goal: $goal") // Debug log
+        meditationDao.insertGoal(goal)
     }
 
     // Completion operations

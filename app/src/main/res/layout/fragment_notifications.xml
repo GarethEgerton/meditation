@@ -13,9 +13,28 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Stats Chart -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#1F1F1F"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <com.github.mikephil.charting.charts.BarChart
+                android:id="@+id/stats_chart"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"/>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Stats Table -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="72dp"
             app:cardBackgroundColor="#1F1F1F"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp">
@@ -38,67 +57,67 @@
                         android:paddingBottom="8dp">
 
                         <TextView
-                            android:layout_width="90dp"
+                            android:layout_width="60dp"
                             android:layout_height="wrap_content"
                             android:text="Date"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="start" />
+                            android:gravity="center" />
 
                         <TextView
-                            android:layout_width="50dp"
+                            android:layout_width="35dp"
                             android:layout_height="wrap_content"
                             android:text="Day"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="start" />
+                            android:gravity="center" />
 
                         <TextView
-                            android:layout_width="70dp"
+                            android:layout_width="45dp"
                             android:layout_height="wrap_content"
                             android:text="Mins"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="end" />
+                            android:gravity="center" />
 
                         <TextView
-                            android:layout_width="70dp"
+                            android:layout_width="45dp"
                             android:layout_height="wrap_content"
-                            android:text="Sessions"
+                            android:text="Session"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="end" />
+                            android:gravity="center" />
 
                         <TextView
-                            android:layout_width="50dp"
+                            android:layout_width="40dp"
                             android:layout_height="wrap_content"
-                            android:text="1min"
+                            android:text="1m"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="end" />
+                            android:gravity="center" />
 
                         <TextView
-                            android:layout_width="50dp"
+                            android:layout_width="40dp"
                             android:layout_height="wrap_content"
-                            android:text="2min"
+                            android:text="2m"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="end" />
+                            android:gravity="center" />
 
                         <TextView
-                            android:layout_width="50dp"
+                            android:layout_width="40dp"
                             android:layout_height="wrap_content"
-                            android:text="5min"
+                            android:text="5m"
                             android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:gravity="end" />
+                            android:gravity="center" />
 
                     </LinearLayout>
 
@@ -106,7 +125,8 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/stats_recycler_view"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="400dp"
+                        android:nestedScrollingEnabled="false"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
                 </LinearLayout>

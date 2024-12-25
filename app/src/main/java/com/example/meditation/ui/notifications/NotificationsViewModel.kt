@@ -29,6 +29,7 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             // Combine goals and completions flows to update whenever either changes
             repository.getAllGoals().combine(repository.getAllCompletions()) { goals, completions ->
+                println("Current goals: $goals") // Debug log
                 val today = LocalDate.now()
                 val twoWeeksAgo = today.minusDays(13) // 14 days including today
 
@@ -55,12 +56,16 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                         // Get goals that were active at the end of this day
                         val endOfDay = date.plusDays(1).atStartOfDay().minusNanos(1)
                         val timestamp = endOfDay.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+                        println("Processing date: $date, timestamp: $timestamp") // Debug log
                         
                         // For today, use current goals instead of historical ones
                         val historicalGoals = if (date == today) {
+                            println("Using current goals for today: $goals") // Debug log
                             goals
                         } else {
-                            repository.getGoalsActiveAtTime(timestamp)
+                            val activeGoals = repository.getGoalsActiveAtTime(timestamp)
+                            println("Historical goals for $date: $activeGoals") // Debug log
+                            activeGoals
                         }
 
                         // Calculate completions for each timer
@@ -72,6 +77,8 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                         val oneMinGoal = historicalGoals.find { it.timerMinutes == 1 }?.timesPerDay ?: 0
                         val twoMinGoal = historicalGoals.find { it.timerMinutes == 2 }?.timesPerDay ?: 0
                         val fiveMinGoal = historicalGoals.find { it.timerMinutes == 5 }?.timesPerDay ?: 0
+
+                        println("Goals for $date: 1min=$oneMinGoal, 2min=$twoMinGoal, 5min=$fiveMinGoal") // Debug log
 
                         // Check if all goals were met for this day
                         val isGoalCompleted = historicalGoals.all { goal ->

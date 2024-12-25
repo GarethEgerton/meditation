@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.meditation.databinding.ItemStatsRowBinding
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 data class StatsRow(
     val date: LocalDate,
@@ -25,7 +26,7 @@ class StatsAdapter : RecyclerView.Adapter<StatsAdapter.StatsViewHolder>() {
     class StatsViewHolder(private val binding: ItemStatsRowBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(stats: StatsRow) {
             binding.root.isActivated = stats.isGoalCompleted
-            binding.dateText.text = stats.date.toString()
+            binding.dateText.text = stats.date.format(DateTimeFormatter.ofPattern("MMM d"))
             binding.dayText.text = stats.date.dayOfWeek.toString().substring(0, 3)
             binding.timeText.text = stats.totalMinutes.toString()
             binding.sessionsText.text = stats.totalSessions.toString()

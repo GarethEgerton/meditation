@@ -6,6 +6,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MeditationDao {
     // Goal operations
+    @Query("""
+        SELECT mg.* FROM meditation_goals mg
+        INNER JOIN (
+            SELECT timerMinutes, MAX(timestamp) as max_timestamp
+            FROM meditation_goals
+            GROUP BY timerMinutes
+        ) latest ON mg.timerMinutes = latest.timerMinutes 
+        AND mg.timestamp = latest.max_timestamp
+    """)
+    fun getAllCurrentGoals(): Flow<List<MeditationGoal>>
+
     @Query("SELECT * FROM meditation_goals")
     fun getAllGoals(): Flow<List<MeditationGoal>>
 
@@ -18,10 +29,14 @@ interface MeditationDao {
     fun getGoalForTimer(minutes: Int): Flow<MeditationGoal?>
 
     @Query("""
-        SELECT * FROM meditation_goals 
-        WHERE timestamp <= :timestamp
-        GROUP BY timerMinutes
-        HAVING MAX(timestamp) <= :timestamp
+        SELECT mg.* FROM meditation_goals mg
+        INNER JOIN (
+            SELECT timerMinutes, MAX(timestamp) as max_timestamp
+            FROM meditation_goals
+            WHERE timestamp <= :timestamp
+            GROUP BY timerMinutes
+        ) latest ON mg.timerMinutes = latest.timerMinutes 
+        AND mg.timestamp = latest.max_timestamp
     """)
     suspend fun getGoalsActiveAtTime(timestamp: Long): List<MeditationGoal>
 
