@@ -15,12 +15,15 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.LiveData
 import com.example.meditation.R
 import com.example.meditation.databinding.FragmentHomeBinding
 import com.google.android.material.button.MaterialButton
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import com.example.meditation.ui.timer.TimerConfig
+import com.example.meditation.ui.timer.TimerConfigs
 
 class HomeFragment : Fragment() {
 
@@ -38,24 +41,32 @@ class HomeFragment : Fragment() {
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
 
-        // Set up button click listeners
-        binding.timer1min.setOnClickListener { viewModel.handleTimerClick(1) }
-        binding.timer2min.setOnClickListener { viewModel.handleTimerClick(2) }
-        binding.timer5min.setOnClickListener { viewModel.handleTimerClick(5) }
-        binding.timerCustom.setOnClickListener { viewModel.handleTimerClick(-1) }
+        setupTimerButtons()
+        setupTimerObservers()
+        observeProgress()
 
-        // Set up cancel button click listeners
-        binding.cancel1min.setOnClickListener { viewModel.cancelTimer(1) }
-        binding.cancel2min.setOnClickListener { viewModel.cancelTimer(2) }
-        binding.cancel5min.setOnClickListener { viewModel.cancelTimer(5) }
-        binding.cancelCustom.setOnClickListener { viewModel.cancelTimer(-1) }
+        return binding.root
+    }
+
+    private fun setupTimerButtons() {
+        // Set up timer click listeners
+        TimerConfigs.configs.forEach { (minutes, config) ->
+            getTimerButton(config.buttonId).setOnClickListener { 
+                viewModel.handleTimerClick(minutes)
+            }
+            getCancelButton(config.cancelButtonId).setOnClickListener {
+                viewModel.cancelTimer(minutes)
+            }
+        }
 
         // Set up custom timer long press
         binding.timerCustom.setOnLongClickListener {
             showCustomTimerDialog()
             true
         }
+    }
 
+    private fun setupTimerObservers() {
         // Observe timer text changes
         viewModel.timerOneText.observe(viewLifecycleOwner) {
             binding.timer1min.text = it
@@ -85,64 +96,52 @@ class HomeFragment : Fragment() {
 
         // Observe error events
         viewModel.errorEvent.observe(viewLifecycleOwner) { minutes ->
-            when (minutes) {
-                1 -> showErrorAnimation(binding.timer1min)
-                2 -> showErrorAnimation(binding.timer2min)
-                5 -> showErrorAnimation(binding.timer5min)
-            }
-        }
-
-        // Observe completion progress
-        observeProgress()
-
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        setupDailyGoalProgress()
-
-        // Observe timer state for complete button visibility
-        viewModel.timerState.observe(viewLifecycleOwner) { state ->
-            binding.completeCustom.visibility = if (state.activeTimer == -1 && state.isPaused) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
-        }
-
-        // Handle complete button click
-        binding.completeCustom.setOnClickListener {
-            viewModel.completeCustomTimer()
+            val config = TimerConfigs.getConfigForMinutes(minutes)
+            showErrorAnimation(getTimerButton(config.buttonId))
         }
     }
 
     private fun observeProgress() {
-        // Observe 1-minute timer progress
-        viewModel.oneMinCompletions.observe(viewLifecycleOwner) { completionState ->
-            viewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
-                updateProgressText(binding.progress1min, completionState.count, goal, completionState.isToday)
-            }
+        // Observe daily progress
+        viewModel.dailyProgress.observe(viewLifecycleOwner) { progress ->
+            binding.dailyGoalProgress.max = progress.target
+            binding.dailyGoalProgress.progress = progress.completed
+            binding.dailyGoalText.text = getString(
+                R.string.daily_progress_format,
+                progress.completed,
+                progress.target
+            )
         }
 
-        // Observe 2-minute timer progress
-        viewModel.twoMinCompletions.observe(viewLifecycleOwner) { completionState ->
-            viewModel.twoMinGoal.observe(viewLifecycleOwner) { goal ->
-                updateProgressText(binding.progress2min, completionState.count, goal, completionState.isToday)
+        // Existing timer progress observations
+        TimerConfigs.configs.forEach { (minutes, config) ->
+            when (minutes) {
+                1 -> observeTimerProgress(viewModel.oneMinCompletions, viewModel.oneMinGoal, config)
+                2 -> observeTimerProgress(viewModel.twoMinCompletions, viewModel.twoMinGoal, config)
+                5 -> observeTimerProgress(viewModel.fiveMinCompletions, viewModel.fiveMinGoal, config)
+                TimerConfigs.CUSTOM_TIMER_ID -> {
+                    viewModel.customCompletions.observe(viewLifecycleOwner) { completionState ->
+                        updateProgressText(getProgressText(config.progressTextId), completionState.count, 0, completionState.isToday)
+                    }
+                }
             }
         }
+    }
 
-        // Observe 5-minute timer progress
-        viewModel.fiveMinCompletions.observe(viewLifecycleOwner) { completionState ->
-            viewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
-                updateProgressText(binding.progress5min, completionState.count, goal, completionState.isToday)
+    private fun observeTimerProgress(
+        completions: LiveData<HomeViewModel.CompletionState>,
+        goal: LiveData<Int>,
+        config: TimerConfig
+    ) {
+        completions.observe(viewLifecycleOwner) { completionState ->
+            goal.observe(viewLifecycleOwner) { goalValue ->
+                updateProgressText(
+                    getProgressText(config.progressTextId),
+                    completionState.count,
+                    goalValue,
+                    completionState.isToday
+                )
             }
-        }
-
-        // Observe custom timer progress
-        viewModel.customCompletions.observe(viewLifecycleOwner) { completionState ->
-            updateProgressText(binding.progressCustom, completionState.count, 0, completionState.isToday)
         }
     }
 
@@ -150,55 +149,50 @@ class HomeFragment : Fragment() {
         textView.apply {
             if (goal == null || goal == 0) {
                 visibility = View.GONE
-            } else {
-                visibility = View.VISIBLE
-                text = "$completions/$goal"
-                
-                // Get the base color for the timer
-                val baseColor = when (id) {
-                    R.id.progress_1min -> R.color.timer_1min
-                    R.id.progress_2min -> R.color.timer_2min
-                    R.id.progress_5min -> R.color.timer_5min
-                    else -> R.color.black
-                }
+                return
+            }
 
-                // If goal is not met for a previous day, show in red with a subtle animation
-                if (completions < goal && !isToday) {
-                    val errorColor = Color.parseColor("#FFFF5252")
-                    val baseColorValue = ContextCompat.getColor(context, baseColor)
-                    
-                    ValueAnimator.ofObject(ArgbEvaluator(), baseColorValue, errorColor).apply {
-                        duration = 1500
-                        repeatMode = ValueAnimator.REVERSE
-                        repeatCount = ValueAnimator.INFINITE
-                        addUpdateListener { animator ->
-                            setTextColor(animator.animatedValue as Int)
-                        }
-                        start()
-                    }
-                    alpha = 1.0f
-                } else {
-                    // Goal is met or it's today, use normal color
-                    setTextColor(ContextCompat.getColor(context, baseColor))
-                    alpha = if (completions >= goal) 1.0f else 0.8f
-                }
+            visibility = View.VISIBLE
+            text = "$completions/$goal"
+            
+            val config = TimerConfigs.configs.values.find { it.progressTextId == id }
+                ?: return
+
+            if (completions < goal && !isToday) {
+                showErrorAnimation(textView, config.activeColor)
+            } else {
+                setTextColor(ContextCompat.getColor(context, config.activeColor))
+                alpha = if (completions >= goal) 1.0f else 0.8f
             }
         }
     }
 
+    private fun showErrorAnimation(textView: TextView, @ColorRes baseColor: Int) {
+        val errorColor = Color.parseColor("#FFFF5252")
+        val baseColorValue = ContextCompat.getColor(textView.context, baseColor)
+        
+        ValueAnimator.ofObject(ArgbEvaluator(), baseColorValue, errorColor).apply {
+            duration = 1500
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+            addUpdateListener { animator ->
+                textView.setTextColor(animator.animatedValue as Int)
+            }
+            start()
+        }
+        textView.alpha = 1.0f
+    }
+
     private fun updateCancelButtonsVisibility(activeTimer: Int, isPaused: Boolean) {
-        binding.cancel1min.visibility = if (activeTimer == 1 && isPaused) View.VISIBLE else View.GONE
-        binding.cancel2min.visibility = if (activeTimer == 2 && isPaused) View.VISIBLE else View.GONE
-        binding.cancel5min.visibility = if (activeTimer == 5 && isPaused) View.VISIBLE else View.GONE
-        binding.cancelCustom.visibility = if (activeTimer == -1 && isPaused) View.VISIBLE else View.GONE
+        TimerConfigs.configs.forEach { (minutes, config) ->
+            getCancelButton(config.cancelButtonId).visibility = 
+                if (activeTimer == minutes && isPaused) View.VISIBLE else View.GONE
+        }
     }
 
     private fun showErrorAnimation(button: MaterialButton) {
-        val colorFrom = when (button.id) {
-            R.id.timer_1min -> resources.getColor(R.color.timer_1min, null)
-            R.id.timer_2min -> resources.getColor(R.color.timer_2min, null)
-            else -> resources.getColor(R.color.timer_5min, null)
-        }
+        val config = TimerConfigs.getConfigForButtonId(button.id)
+        val colorFrom = ContextCompat.getColor(requireContext(), config.activeColor)
         val colorTo = Color.parseColor("#FFFF5252")
 
         ValueAnimator.ofObject(ArgbEvaluator(), colorFrom, colorTo).apply {
@@ -220,99 +214,58 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateActiveTimerAppearance(activeTimer: Int, isPaused: Boolean) {
-        // Update all buttons based on state
-        setButtonAppearance(binding.timer1min, binding.progress1min, 1)
-        setButtonAppearance(binding.timer2min, binding.progress2min, 2)
-        setButtonAppearance(binding.timer5min, binding.progress5min, 5)
-        setButtonAppearance(binding.timerCustom, binding.progressCustom, -1)
+        TimerConfigs.configs.forEach { (_, config) ->
+            setButtonAppearance(
+                getTimerButton(config.buttonId),
+                getProgressText(config.progressTextId),
+                config
+            )
+        }
     }
 
-    private fun setButtonAppearance(button: MaterialButton, progressText: TextView, minutes: Int) {
+    private fun setButtonAppearance(button: MaterialButton, progressText: TextView, config: TimerConfig) {
         val timerState = viewModel.timerState.value
-        val isActiveTimer = timerState?.activeTimer == minutes
+        val isActiveTimer = timerState?.activeTimer == config.minutes
         val isAnyTimerActive = timerState?.activeTimer != 0
         val isInactive = isAnyTimerActive && !isActiveTimer
         val isPaused = isActiveTimer && timerState?.isPaused == true
 
         val colorResId = when {
-            isInactive -> when (minutes) {
-                1 -> R.color.timer_1min_inactive
-                2 -> R.color.timer_2min_inactive
-                5 -> R.color.timer_5min_inactive
-                else -> R.color.timer_custom_inactive
-            }
-            isPaused -> when (minutes) {
-                1 -> R.color.timer_1min_paused
-                2 -> R.color.timer_2min_paused
-                5 -> R.color.timer_5min_paused
-                else -> R.color.timer_custom_paused
-            }
-            else -> when (minutes) {
-                1 -> R.color.timer_1min
-                2 -> R.color.timer_2min
-                5 -> R.color.timer_5min
-                else -> R.color.timer_custom
-            }
+            isInactive -> config.inactiveColor
+            isPaused -> config.pausedColor
+            else -> config.activeColor
         }
 
-        val strokeColorResId = when (minutes) {
-            1 -> R.color.timer_1min_stroke
-            2 -> R.color.timer_2min_stroke
-            5 -> R.color.timer_5min_stroke
-            else -> R.color.timer_custom_stroke
-        }
-
-        if (isInactive) {
-            animateButtonState(button, progressText, colorResId, 0.5f, 0, null)
-        } else if (isPaused) {
-            animateButtonState(button, progressText, colorResId, 1.0f, resources.getDimensionPixelSize(R.dimen.button_stroke_width), strokeColorResId)
-        } else {
-            animateButtonState(button, progressText, colorResId, 1.0f, 0, null)
-        }
-
-        button.isEnabled = !isInactive
+        button.backgroundTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(requireContext(), colorResId)
+        )
+        button.strokeColor = ColorStateList.valueOf(
+            ContextCompat.getColor(requireContext(), config.strokeColor)
+        )
     }
 
-    private fun animateButtonState(
-        button: MaterialButton, 
-        progressText: TextView, 
-        @ColorRes colorResId: Int, 
-        targetAlpha: Float, 
-        strokeWidth: Int,
-        @ColorRes strokeColorResId: Int?
-    ) {
-        val context = button.context
-        val color = ContextCompat.getColor(context, colorResId)
-        
-        button.animate()
-            .alpha(targetAlpha)
-            .setDuration(500)
-            .start()
-            
-        progressText.animate()
-            .alpha(targetAlpha)
-            .setDuration(500)
-            .start()
+    private fun getTimerButton(buttonId: Int): MaterialButton = when (buttonId) {
+        R.id.timer_1min -> binding.timer1min
+        R.id.timer_2min -> binding.timer2min
+        R.id.timer_5min -> binding.timer5min
+        R.id.timer_custom -> binding.timerCustom
+        else -> throw IllegalArgumentException("Unknown button ID: $buttonId")
+    }
 
-        val colorAnimator = ValueAnimator.ofObject(ArgbEvaluator(), button.backgroundTintList?.defaultColor, color)
-        colorAnimator.duration = 500
-        colorAnimator.addUpdateListener { animator ->
-            button.backgroundTintList = ColorStateList.valueOf(animator.animatedValue as Int)
-            progressText.setTextColor(animator.animatedValue as Int)
-        }
-        colorAnimator.start()
+    private fun getCancelButton(buttonId: Int): View = when (buttonId) {
+        R.id.cancel_1min -> binding.cancel1min
+        R.id.cancel_2min -> binding.cancel2min
+        R.id.cancel_5min -> binding.cancel5min
+        R.id.cancel_custom -> binding.cancelCustom
+        else -> throw IllegalArgumentException("Unknown cancel button ID: $buttonId")
+    }
 
-        // Animate stroke width and color
-        ValueAnimator.ofInt(button.strokeWidth, strokeWidth).apply {
-            duration = 500
-            addUpdateListener { animator ->
-                button.strokeWidth = animator.animatedValue as Int
-                if (strokeColorResId != null) {
-                    button.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, strokeColorResId))
-                }
-            }
-            start()
-        }
+    private fun getProgressText(textId: Int): TextView = when (textId) {
+        R.id.progress_1min -> binding.progress1min
+        R.id.progress_2min -> binding.progress2min
+        R.id.progress_5min -> binding.progress5min
+        R.id.progress_custom -> binding.progressCustom
+        else -> throw IllegalArgumentException("Unknown progress text ID: $textId")
     }
 
     private fun playTimerCompletionSound() {
@@ -331,43 +284,6 @@ class HomeFragment : Fragment() {
                 viewModel.updateCustomTimer(hours, minutes, isInfinite)
             }
         ).show(childFragmentManager, "custom_timer_dialog")
-    }
-
-    private fun setupDailyGoalProgress() {
-        viewModel.dailyProgress.observe(viewLifecycleOwner) { progress ->
-            updateDailyProgress(progress.completed, progress.target)
-        }
-    }
-
-    private fun updateDailyProgress(completedMinutes: Int, targetMinutes: Int) {
-        with(binding) {
-            dailyGoalProgress.max = targetMinutes
-            dailyGoalProgress.setProgress(completedMinutes, true)
-            dailyGoalText.text = getString(R.string.daily_progress_format, completedMinutes, targetMinutes)
-
-            val isCompleted = completedMinutes >= targetMinutes && completedMinutes > 0
-            dailyGoalCard.isActivated = isCompleted
-            dailyGoalLabel.isActivated = isCompleted
-            dailyGoalText.isActivated = isCompleted
-
-            if (isCompleted) {
-                animateProgressCompletion()
-            }
-        }
-    }
-
-    private fun animateProgressCompletion() {
-        val colorFrom = ContextCompat.getColor(requireContext(), R.color.daily_goal_progress_bar)
-        val colorTo = ContextCompat.getColor(requireContext(), R.color.teal_200)
-        
-        ValueAnimator.ofArgb(colorFrom, colorTo).apply {
-            duration = 500
-            interpolator = FastOutSlowInInterpolator()
-            addUpdateListener { animator ->
-                binding.dailyGoalProgress.setIndicatorColor(animator.animatedValue as Int)
-            }
-            start()
-        }
     }
 
     override fun onDestroyView() {

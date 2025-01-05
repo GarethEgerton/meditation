@@ -2,17 +2,16 @@ package com.example.meditation.ui.home
 
 import android.app.Application
 import androidx.lifecycle.*
-import com.example.meditation.data.MeditationDatabase
-import com.example.meditation.data.MeditationRepository
+import com.example.meditation.data.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MeditationRepository
+    private val progressManager: ProgressManager
     private var timerJob: Job? = null
     private var remainingSeconds: Int = 0
 
@@ -45,6 +44,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val oneMinGoal: LiveData<Int>
     val twoMinGoal: LiveData<Int>
     val fiveMinGoal: LiveData<Int>
+    val dailyProgress: LiveData<ProgressManager.DailyProgress>
 
     data class CompletionState(
         val count: Int,
@@ -64,47 +64,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _customCompletions = MutableLiveData<CompletionState>()
     val customCompletions: LiveData<CompletionState> = _customCompletions
 
-    data class DailyProgress(
-        val completed: Int = 0,
-        val target: Int = 30  // Default target of 30 minutes
-    )
-
-    private val _dailyProgress = MutableLiveData<DailyProgress>()
-    val dailyProgress: LiveData<DailyProgress> = _dailyProgress
-
     init {
         val database = MeditationDatabase.getDatabase(application)
         repository = MeditationRepository(database.meditationDao())
+        progressManager = ProgressManager.getInstance(repository)
 
-        // Initialize goals from database
-        oneMinGoal = repository.getGoalForTimer(1)
-            .map { it?.timesPerDay ?: 0 }
-            .asLiveData()
-
-        twoMinGoal = repository.getGoalForTimer(2)
-            .map { it?.timesPerDay ?: 0 }
-            .asLiveData()
-
-        fiveMinGoal = repository.getGoalForTimer(5)
-            .map { it?.timesPerDay ?: 0 }
-            .asLiveData()
-
-        // Initialize daily progress
-        viewModelScope.launch {
-            // Observe daily minutes goal
-            launch {
-                repository.getCurrentDailyMinutesGoal().collect { goal ->
-                    updateDailyProgress(targetMinutes = goal?.targetMinutes ?: 30)
-                }
-            }
-
-            // Observe today's total minutes
-            launch {
-                repository.getTodayTotalMinutes().collect { totalMinutes ->
-                    updateDailyProgress(completedMinutes = totalMinutes.toInt())
-                }
-            }
-        }
+        // Get goals and progress from ProgressManager
+        oneMinGoal = progressManager.oneMinGoal
+        twoMinGoal = progressManager.twoMinGoal
+        fiveMinGoal = progressManager.fiveMinGoal
+        dailyProgress = progressManager.dailyProgress
 
         // Initialize completions from database with today flag
         viewModelScope.launch {
@@ -151,14 +120,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
-    }
-
-    private fun updateDailyProgress(targetMinutes: Int? = null, completedMinutes: Int? = null) {
-        val currentProgress = _dailyProgress.value ?: DailyProgress()
-        _dailyProgress.value = currentProgress.copy(
-            target = targetMinutes ?: currentProgress.target,
-            completed = completedMinutes ?: currentProgress.completed
-        )
     }
 
     data class TimerState(
