@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.example.meditation.R
 import com.example.meditation.databinding.FragmentNotificationsBinding
 import java.time.format.DateTimeFormatter
 import com.github.mikephil.charting.charts.BarChart
@@ -38,41 +39,71 @@ class NotificationsFragment : Fragment() {
         
         binding.statsRecyclerView.adapter = adapter
 
+        setupDisplayModeSwitch()
+        observeViewModel()
+
+        return binding.root
+    }
+
+    private fun setupDisplayModeSwitch() {
+        binding.displayModeChipGroup.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.minutes_chip -> viewModel.setDisplayMode(true)
+                R.id.sessions_chip -> viewModel.setDisplayMode(false)
+            }
+        }
+        
+        // Set initial state
+        binding.minutesChip.isChecked = true
+    }
+
+    private fun observeViewModel() {
         viewModel.statsRows.observe(viewLifecycleOwner) { stats ->
             adapter.submitList(stats)
             updateChart(stats)
         }
 
-        return binding.root
+        viewModel.isShowingMinutes.observe(viewLifecycleOwner) { isShowingMinutes ->
+            if (viewModel.statsRows.value != null) {
+                updateChart(viewModel.statsRows.value!!)
+            }
+        }
     }
 
     private fun updateChart(stats: List<StatsRow>) {
         val entries = mutableListOf<BarEntry>()
+        val isShowingMinutes = viewModel.isShowingMinutes.value ?: true
 
         // Process data in reverse order (oldest to newest)
         stats.asReversed().forEachIndexed { index, row ->
-            // Create stacked bar entry with [completed, remaining] values
-            val completed = row.totalSessions.toFloat()
-            val totalGoals = (row.oneMinGoal + row.twoMinGoal + row.fiveMinGoal).toFloat()
-            val remaining = if (totalGoals > completed) totalGoals - completed else 0f
-            
-            entries.add(BarEntry(index.toFloat(), floatArrayOf(completed, remaining)))
+            if (isShowingMinutes) {
+                // For minutes mode: completed minutes and remaining minutes to goal
+                val completedMinutes = row.totalMinutes.toFloat()
+                val remainingMinutes = if (row.totalMinutesGoal > completedMinutes) 
+                    row.totalMinutesGoal - completedMinutes else 0f
+                entries.add(BarEntry(index.toFloat(), floatArrayOf(completedMinutes, remainingMinutes)))
+            } else {
+                // For sessions mode: completed sessions and remaining sessions to goal
+                val completedSessions = row.totalSessions.toFloat()
+                val remainingSessions = if (row.totalSessionsGoal > completedSessions) 
+                    row.totalSessionsGoal - completedSessions else 0f
+                entries.add(BarEntry(index.toFloat(), floatArrayOf(completedSessions, remainingSessions)))
+            }
         }
 
-        val completedDataSet = BarDataSet(entries, "Completed Sessions").apply {
-            color = resources.getColor(android.R.color.holo_green_light, null)
+        val label = if (isShowingMinutes) "Minutes" else "Sessions"
+        val dataSet = BarDataSet(entries, label).apply {
+            colors = listOf(
+                resources.getColor(android.R.color.holo_green_light, null),
+                resources.getColor(android.R.color.holo_orange_light, null)
+            )
             valueTextColor = resources.getColor(android.R.color.white, null)
             valueTextSize = 8f
             setDrawValues(true)
             stackLabels = arrayOf("Completed", "Remaining")
         }
 
-        completedDataSet.colors = listOf(
-            resources.getColor(android.R.color.holo_green_light, null),
-            resources.getColor(android.R.color.holo_orange_light, null)
-        )
-
-        val barData = BarData(completedDataSet).apply {
+        val barData = BarData(dataSet).apply {
             barWidth = 0.5f
         }
 

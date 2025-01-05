@@ -323,28 +323,6 @@
             </LinearLayout>
         </FrameLayout>
 
-        <Button
-            android:id="@+id/customTimerButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="∞"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/timer_5min"
-            android:layout_marginTop="8dp"
-            android:layout_marginHorizontal="16dp" />
-
-        <Button
-            android:id="@+id/completeCustomTimerButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Complete"
-            android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/customTimerButton"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="8dp" />
-
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme Colors -->
+    <!-- Base Theme Colors - Consider deprecating unused ones -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -9,7 +9,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Timer Colors -->
+    <!-- Timer Colors - Each set represents a state group -->
     <color name="timer_1min">#80CBC4</color>
     <color name="timer_1min_inactive">#8080CBC4</color>
     <color name="timer_1min_paused">#FF3D5F5D</color>
@@ -34,7 +34,7 @@
     <color name="timer_custom_reset">#80FFAB91</color>
     <color name="timer_custom_stroke">#40FFAB91</color>
 
-    <!-- Daily Meditation Goal Colors -->
+    <!-- Daily Goal States - Normal -->
     <color name="daily_goal_background">#2F1F1A</color>
     <color name="daily_goal_text">@color/timer_custom</color>
     <color name="daily_goal_progress_text">#80FFAB91</color>
@@ -42,10 +42,16 @@
     <color name="daily_goal_progress_background">#40FFAB91</color>
     <color name="daily_goal_input_background">#3F2F2A</color>
 
-    <!-- Completed Goal Colors -->
+    <!-- Daily Goal States - Completed -->
     <color name="daily_goal_completed_background">#1A2E2E</color>
-    <color name="daily_goal_completed_text">#FF03DAC5</color>
+    <color name="daily_goal_completed_text">@color/teal_200</color>
     <color name="daily_goal_completed_progress_text">#B3E5FC</color>
     <color name="daily_goal_completed_progress_bar">@color/teal_200</color>
     <color name="daily_goal_completed_progress_background">#40018786</color>
+
+    <!-- Stats Page Chip States -->
+    <color name="chip_selected_background">@color/daily_goal_background</color>
+    <color name="chip_selected_text">@color/daily_goal_text</color>
+    <color name="chip_unselected_background">#1F1F1F</color>
+    <color name="chip_unselected_text">#80FFAB91</color>
 </resources>

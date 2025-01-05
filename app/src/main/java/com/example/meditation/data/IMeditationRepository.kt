@@ -16,6 +16,7 @@ interface IMeditationRepository {
     fun getTodayCompletions(minutes: Int): Flow<Result<List<MeditationCompletion>>>
     fun getTodayCompletionCount(minutes: Int): Flow<Result<Int>>
     suspend fun cleanupOldCompletions(daysToKeep: Int): Result<Unit>
+    fun getAllCompletions(): Flow<Result<List<MeditationCompletion>>>
     
     // Daily minutes operations
     fun getCurrentDailyMinutesGoal(): Flow<Result<DailyMinutesGoal?>>

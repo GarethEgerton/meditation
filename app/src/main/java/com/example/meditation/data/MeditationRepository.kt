@@ -93,4 +93,7 @@ class MeditationRepository(private val meditationDao: MeditationDao) : IMeditati
         meditationDao.getTotalMinutesForDate(date.format())
             .map { totalSeconds -> totalSeconds / 60 }
             .wrapWithResult("getTotalMinutesForDate")
+
+    override fun getAllCompletions(): Flow<Result<List<MeditationCompletion>>> =
+        meditationDao.getAllCompletions().wrapWithResult("getAllCompletions")
 } 

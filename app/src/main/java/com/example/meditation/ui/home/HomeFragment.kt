@@ -69,6 +69,11 @@ class HomeFragment : Fragment() {
             showCustomTimerDialog()
             true
         }
+
+        // Set up complete button for custom timer
+        binding.completeCustom.setOnClickListener {
+            viewModel.completeCustomTimer()
+        }
     }
 
     private fun setupTimerObservers() {
@@ -115,6 +120,16 @@ class HomeFragment : Fragment() {
                 R.string.daily_progress_format,
                 progress.completed,
                 progress.target
+            )
+
+            // Update card and progress bar state when goal is completed
+            val isGoalCompleted = progress.completed >= progress.target && progress.target > 0
+            binding.dailyGoalCard.isActivated = isGoalCompleted
+            binding.dailyGoalProgress.setIndicatorColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isGoalCompleted) R.color.daily_goal_completed_progress_bar else R.color.daily_goal_progress_bar
+                )
             )
         }
 

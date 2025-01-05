@@ -13,6 +13,33 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Display Mode Chips -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/display_mode_chip_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:layout_gravity="center_horizontal"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/minutes_chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Minutes"
+                android:checked="true"
+                style="@style/CustomChipChoice" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/sessions_chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sessions"
+                style="@style/CustomChipChoice" />
+
+        </com.google.android.material.chip.ChipGroup>
+
         <!-- Stats Chart -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

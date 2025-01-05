@@ -10,7 +10,9 @@ import java.time.format.DateTimeFormatter
 data class StatsRow(
     val date: LocalDate,
     val totalMinutes: Int,
+    val totalMinutesGoal: Int,
     val totalSessions: Int,
+    val totalSessionsGoal: Int,
     val isGoalCompleted: Boolean = false,
     val oneMinGoal: Int = 0,
     val twoMinGoal: Int = 0,
