@@ -1,77 +1,96 @@
 package com.example.meditation.data
 
+import com.example.meditation.core.result.MeditationError
+import com.example.meditation.core.result.Result
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-class MeditationRepository(private val meditationDao: MeditationDao) {
+class MeditationRepository(private val meditationDao: MeditationDao) : IMeditationRepository {
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     // Helper functions
     private fun LocalDate.format() = format(dateFormatter)
     private fun getCurrentDate() = LocalDate.now().format()
 
-    // Goal operations
-    fun getAllGoals(): Flow<List<MeditationGoal>> = meditationDao.getAllCurrentGoals()
-
-    fun getGoalForTimer(minutes: Int): Flow<MeditationGoal?> = 
-        meditationDao.getGoalForTimer(minutes)
-
-    suspend fun getGoalsActiveAtTime(timestamp: Long): List<MeditationGoal> =
-        meditationDao.getGoalsActiveAtTime(timestamp)
-
-    suspend fun updateGoal(minutes: Int, timesPerDay: Int) {
-        val goal = MeditationGoal(minutes, timesPerDay)
-        meditationDao.insertGoal(goal)
+    private suspend fun <T> wrapDatabaseCall(
+        operation: String,
+        block: suspend () -> T
+    ): Result<T> = try {
+        Result.success(block())
+    } catch (e: Exception) {
+        Result.error(MeditationError.DatabaseError(operation, e))
     }
+    
+    private fun <T> Flow<T>.wrapWithResult(operation: String): Flow<Result<T>> = 
+        this.map { Result.success(it) }
+            .catch { e -> 
+                emit(Result.error(MeditationError.DatabaseError(operation, e)))
+            }
+
+    // Goal operations
+    override fun getAllGoals(): Flow<Result<List<MeditationGoal>>> =
+        meditationDao.getAllCurrentGoals().wrapWithResult("getAllGoals")
+
+    override fun getGoalForTimer(minutes: Int): Flow<Result<MeditationGoal?>> =
+        meditationDao.getGoalForTimer(minutes).wrapWithResult("getGoalForTimer")
+
+    override suspend fun getGoalsActiveAtTime(timestamp: Long): Result<List<MeditationGoal>> =
+        wrapDatabaseCall("getGoalsActiveAtTime") {
+            meditationDao.getGoalsActiveAtTime(timestamp)
+        }
+
+    override suspend fun updateGoal(minutes: Int, timesPerDay: Int): Result<Unit> =
+        wrapDatabaseCall("updateGoal") {
+            val goal = MeditationGoal(minutes, timesPerDay)
+            meditationDao.insertGoal(goal)
+        }
 
     // Completion operations
-    suspend fun recordCompletion(minutes: Int, actualDuration: Long? = null) {
-        val completion = MeditationCompletion(
-            timerMinutes = minutes,
-            timestamp = System.currentTimeMillis(),
-            date = getCurrentDate(),
-            actualDuration = actualDuration
-        )
-        meditationDao.insertCompletion(completion)
-    }
+    override suspend fun recordCompletion(minutes: Int, actualDuration: Long?): Result<Unit> =
+        wrapDatabaseCall("recordCompletion") {
+            val completion = MeditationCompletion(
+                timerMinutes = minutes,
+                timestamp = System.currentTimeMillis(),
+                date = getCurrentDate(),
+                actualDuration = actualDuration
+            )
+            meditationDao.insertCompletion(completion)
+        }
 
-    suspend fun recordCustomCompletion(minutes: Int, actualDuration: Long) {
-        recordCompletion(minutes, actualDuration)
-    }
-
-    fun getTodayCompletions(minutes: Int): Flow<List<MeditationCompletion>> =
+    override fun getTodayCompletions(minutes: Int): Flow<Result<List<MeditationCompletion>>> =
         meditationDao.getCompletionsForDate(getCurrentDate(), minutes)
+            .wrapWithResult("getTodayCompletions")
 
-    fun getTodayCompletionCount(minutes: Int): Flow<Int> =
+    override fun getTodayCompletionCount(minutes: Int): Flow<Result<Int>> =
         meditationDao.getCompletionCountForDate(getCurrentDate(), minutes)
+            .wrapWithResult("getTodayCompletionCount")
 
-    suspend fun getCompletionCountForDate(date: LocalDate, minutes: Int): Int =
-        meditationDao.getCompletionCountForDateSync(date.format(), minutes)
-
-    fun getAllCompletions(): Flow<List<MeditationCompletion>> = 
-        meditationDao.getAllCompletions()
-
-    suspend fun cleanupOldCompletions(daysToKeep: Int = 30) {
-        val cutoffDate = LocalDate.now().minusDays(daysToKeep.toLong()).format()
-        meditationDao.deleteCompletionsBeforeDate(cutoffDate)
-    }
+    override suspend fun cleanupOldCompletions(daysToKeep: Int): Result<Unit> =
+        wrapDatabaseCall("cleanupOldCompletions") {
+            val cutoffDate = LocalDate.now().minusDays(daysToKeep.toLong()).format()
+            meditationDao.deleteCompletionsBeforeDate(cutoffDate)
+        }
 
     // Daily minutes goal operations
-    fun getCurrentDailyMinutesGoal(): Flow<DailyMinutesGoal?> =
-        meditationDao.getCurrentDailyMinutesGoal()
+    override fun getCurrentDailyMinutesGoal(): Flow<Result<DailyMinutesGoal?>> =
+        meditationDao.getCurrentDailyMinutesGoal().wrapWithResult("getCurrentDailyMinutesGoal")
 
-    suspend fun updateDailyMinutesGoal(targetMinutes: Int) {
-        val goal = DailyMinutesGoal(targetMinutes = targetMinutes)
-        meditationDao.insertDailyMinutesGoal(goal)
-    }
+    override suspend fun updateDailyMinutesGoal(targetMinutes: Int): Result<Unit> =
+        wrapDatabaseCall("updateDailyMinutesGoal") {
+            val goal = DailyMinutesGoal(targetMinutes = targetMinutes)
+            meditationDao.insertDailyMinutesGoal(goal)
+        }
 
-    fun getTodayTotalMinutes(): Flow<Long> =
+    override fun getTodayTotalMinutes(): Flow<Result<Long>> =
         meditationDao.getTotalMinutesForDate(getCurrentDate())
             .map { totalSeconds -> totalSeconds / 60 }
+            .wrapWithResult("getTodayTotalMinutes")
 
-    fun getTotalMinutesForDate(date: LocalDate): Flow<Long> =
+    override fun getTotalMinutesForDate(date: LocalDate): Flow<Result<Long>> =
         meditationDao.getTotalMinutesForDate(date.format())
             .map { totalSeconds -> totalSeconds / 60 }
+            .wrapWithResult("getTotalMinutesForDate")
 } 

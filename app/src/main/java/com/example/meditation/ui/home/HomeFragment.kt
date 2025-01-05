@@ -45,6 +45,11 @@ class HomeFragment : Fragment() {
         setupTimerObservers()
         observeProgress()
 
+        // Add complete button click listener
+        binding.completeCustom.setOnClickListener {
+            viewModel.completeCustomTimer()
+        }
+
         return binding.root
     }
 
@@ -188,6 +193,10 @@ class HomeFragment : Fragment() {
             getCancelButton(config.cancelButtonId).visibility = 
                 if (activeTimer == minutes && isPaused) View.VISIBLE else View.GONE
         }
+
+        // Update complete button visibility for custom timer
+        binding.completeCustom.visibility = 
+            if (activeTimer == -1 && isPaused) View.VISIBLE else View.GONE
     }
 
     private fun showErrorAnimation(button: MaterialButton) {

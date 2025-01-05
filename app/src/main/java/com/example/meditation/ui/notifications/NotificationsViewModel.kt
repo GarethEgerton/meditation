@@ -5,14 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.meditation.data.MeditationCompletion
-import com.example.meditation.data.MeditationDatabase
-import com.example.meditation.data.MeditationRepository
+import com.example.meditation.core.result.getOrDefault
+import com.example.meditation.core.result.unwrapOrDefault
+import com.example.meditation.data.*
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 class NotificationsViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: MeditationRepository
@@ -28,8 +27,10 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
     private fun loadStats() {
         viewModelScope.launch {
             // Combine goals and completions flows to update whenever either changes
-            repository.getAllGoals().combine(repository.getAllCompletions()) { goals, completions ->
-                println("Current goals: $goals") // Debug log
+            repository.getAllGoals().combine(repository.getTodayCompletions(-1)) { goalsResult, completionsResult ->
+                val goals = goalsResult.getOrDefault(emptyList())
+                val completions = completionsResult.getOrDefault(emptyList())
+                
                 val today = LocalDate.now()
                 val twoWeeksAgo = today.minusDays(13) // 14 days including today
 
@@ -53,19 +54,12 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                 statsMap.entries
                     .sortedByDescending { it.key }
                     .map { (date, dayCompletions) ->
-                        // Get goals that were active at the end of this day
-                        val endOfDay = date.plusDays(1).atStartOfDay().minusNanos(1)
-                        val timestamp = endOfDay.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
-                        println("Processing date: $date, timestamp: $timestamp") // Debug log
-                        
                         // For today, use current goals instead of historical ones
                         val historicalGoals = if (date == today) {
-                            println("Using current goals for today: $goals") // Debug log
                             goals
                         } else {
-                            val activeGoals = repository.getGoalsActiveAtTime(timestamp)
-                            println("Historical goals for $date: $activeGoals") // Debug log
-                            activeGoals
+                            repository.getGoalsActiveAtTime(date.atStartOfDay().toEpochSecond(java.time.ZoneOffset.UTC) * 1000)
+                                .getOrDefault(emptyList())
                         }
 
                         // Calculate completions for each timer
@@ -77,8 +71,6 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                         val oneMinGoal = historicalGoals.find { it.timerMinutes == 1 }?.timesPerDay ?: 0
                         val twoMinGoal = historicalGoals.find { it.timerMinutes == 2 }?.timesPerDay ?: 0
                         val fiveMinGoal = historicalGoals.find { it.timerMinutes == 5 }?.timesPerDay ?: 0
-
-                        println("Goals for $date: 1min=$oneMinGoal, 2min=$twoMinGoal, 5min=$fiveMinGoal") // Debug log
 
                         // Check if all goals were met for this day
                         val isGoalCompleted = historicalGoals.all { goal ->
@@ -99,7 +91,7 @@ class NotificationsViewModel(application: Application) : AndroidViewModel(applic
                             fiveMinCompletions = fiveMinCompletions
                         )
                     }
-            }.collectLatest { stats ->
+            }.collect { stats ->
                 _statsRows.value = stats
             }
         }

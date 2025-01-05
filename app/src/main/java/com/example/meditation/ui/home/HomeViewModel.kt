@@ -3,8 +3,10 @@ package com.example.meditation.ui.home
 import android.app.Application
 import androidx.lifecycle.*
 import com.example.meditation.data.*
+import com.example.meditation.core.result.getOrDefault
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -82,10 +84,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val yesterday = today.minusDays(1)
 
             // First check yesterday's completions
-            val yesterdayOneMin = repository.getCompletionCountForDate(yesterday, 1)
-            val yesterdayTwoMin = repository.getCompletionCountForDate(yesterday, 2)
-            val yesterdayFiveMin = repository.getCompletionCountForDate(yesterday, 5)
-            val yesterdayCustom = repository.getCompletionCountForDate(yesterday, -1)
+            val yesterdayOneMin = repository.getTodayCompletionCount(1).first().getOrDefault(0)
+            val yesterdayTwoMin = repository.getTodayCompletionCount(2).first().getOrDefault(0)
+            val yesterdayFiveMin = repository.getTodayCompletionCount(5).first().getOrDefault(0)
+            val yesterdayCustom = repository.getTodayCompletionCount(-1).first().getOrDefault(0)
 
             // If there are any completions from yesterday, show those first
             if (yesterdayOneMin > 0 || yesterdayTwoMin > 0 || yesterdayFiveMin > 0 || yesterdayCustom > 0) {
@@ -97,26 +99,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             // Start observing today's completions for all timers
             launch {
-                repository.getTodayCompletionCount(1).collect { count ->
-                    _oneMinCompletions.value = CompletionState(count, true)
+                repository.getTodayCompletionCount(1).collect { result ->
+                    _oneMinCompletions.value = CompletionState(result.getOrDefault(0), true)
                 }
             }
 
             launch {
-                repository.getTodayCompletionCount(2).collect { count ->
-                    _twoMinCompletions.value = CompletionState(count, true)
+                repository.getTodayCompletionCount(2).collect { result ->
+                    _twoMinCompletions.value = CompletionState(result.getOrDefault(0), true)
                 }
             }
 
             launch {
-                repository.getTodayCompletionCount(5).collect { count ->
-                    _fiveMinCompletions.value = CompletionState(count, true)
+                repository.getTodayCompletionCount(5).collect { result ->
+                    _fiveMinCompletions.value = CompletionState(result.getOrDefault(0), true)
                 }
             }
 
             launch {
-                repository.getTodayCompletionCount(-1).collect { count ->
-                    _customCompletions.value = CompletionState(count, true)
+                repository.getTodayCompletionCount(-1).collect { result ->
+                    _customCompletions.value = CompletionState(result.getOrDefault(0), true)
                 }
             }
         }
@@ -317,7 +319,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val actualDuration = (customTimerPausedAt - customTimerStartTime) / 1000L
 
             viewModelScope.launch {
-                repository.recordCustomCompletion(
+                repository.recordCompletion(
                     minutes = if (isCustomTimerInfinite) -1 else customTimerMinutes,
                     actualDuration = actualDuration
                 )
@@ -332,6 +334,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _timerFinished.value = true
             _timerFinished.value = false
         }
+    }
+
+    private fun completeTimer(minutes: Int, actualDuration: Long? = null) {
+        viewModelScope.launch {
+            repository.recordCompletion(minutes, actualDuration)
+        }
+        resetTimerText(minutes)
+        _timerState.value = TimerState(0, false)
+        _timerFinished.value = true
     }
 
     override fun onCleared() {
