@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Theme Colors -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,29 +8,37 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    
-    <!-- Timer button colors - more subtle palette -->
-    <color name="timer_1min">#FF80CBC4</color>  <!-- Soft Teal -->
-    <color name="timer_2min">#FFF48FB1</color>  <!-- Soft Pink -->
-    <color name="timer_5min">#FFBB86FC</color>  <!-- Original Purple -->
-    
-    <!-- Timer button reset colors with alpha -->
-    <color name="timer_1min_reset">#8080CBC4</color>
-    <color name="timer_2min_reset">#80F48FB1</color>
-    <color name="timer_5min_reset">#80BB86FC</color>
-    
-    <!-- Timer button stroke colors with alpha -->
-    <color name="timer_1min_stroke">#4080CBC4</color>
-    <color name="timer_2min_stroke">#40F48FB1</color>
-    <color name="timer_5min_stroke">#40BB86FC</color>
-    
-    <!-- Paused state background colors (darker, faded versions) -->
-    <color name="timer_1min_paused">#FF3D5F5D</color>
-    <color name="timer_2min_paused">#FF734D5F</color>
-    <color name="timer_5min_paused">#FF3D2E5C</color>
 
-    <!-- Inactive state colors (greyed out versions) -->
-    <color name="timer_1min_inactive">#FF2F3B3A</color>
-    <color name="timer_2min_inactive">#FF3B2F33</color>
-    <color name="timer_5min_inactive">#FF2F2F3B</color>
+    <!-- Timer Colors -->
+    <color name="timer_1min">#80CBC4</color>
+    <color name="timer_1min_inactive">#8080CBC4</color>
+    <color name="timer_1min_paused">#FF3D5F5D</color>
+    <color name="timer_1min_reset">#8080CBC4</color>
+    <color name="timer_1min_stroke">#4080CBC4</color>
+
+    <color name="timer_2min">#F48FB1</color>
+    <color name="timer_2min_inactive">#80F48FB1</color>
+    <color name="timer_2min_paused">#FF734D5F</color>
+    <color name="timer_2min_reset">#80F48FB1</color>
+    <color name="timer_2min_stroke">#40F48FB1</color>
+
+    <color name="timer_5min">#BB86FC</color>
+    <color name="timer_5min_inactive">#80BB86FC</color>
+    <color name="timer_5min_paused">#FF3D2E5C</color>
+    <color name="timer_5min_reset">#80BB86FC</color>
+    <color name="timer_5min_stroke">#40BB86FC</color>
+
+    <color name="timer_custom">#FFAB91</color>
+    <color name="timer_custom_inactive">#80FFAB91</color>
+    <color name="timer_custom_paused">#FF734D40</color>
+    <color name="timer_custom_reset">#80FFAB91</color>
+    <color name="timer_custom_stroke">#40FFAB91</color>
+
+    <!-- Daily Meditation Goal Colors -->
+    <color name="daily_goal_background">#2F1F1A</color>
+    <color name="daily_goal_text">@color/timer_custom</color>
+    <color name="daily_goal_progress_text">#80FFAB91</color>
+    <color name="daily_goal_progress_bar">@color/timer_custom</color>
+    <color name="daily_goal_progress_background">#40FFAB91</color>
+    <color name="daily_goal_input_background">#3F2F2A</color>
 </resources>

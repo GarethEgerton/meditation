@@ -17,7 +17,16 @@ data class MeditationGoal(
 data class MeditationCompletion(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val timerMinutes: Int,  // Duration of the meditation (1, 2, or 5)
+    val timerMinutes: Int,  // Duration of the meditation (1, 2, 5, or custom)
     val timestamp: Long,  // Unix timestamp of when the meditation was completed
-    val date: String  // YYYY-MM-DD format for easier querying by day
+    val date: String,  // YYYY-MM-DD format for easier querying by day
+    val actualDuration: Long? = null  // Actual duration in seconds for custom timers
+)
+
+@Entity(tableName = "daily_minutes_goals")
+data class DailyMinutesGoal(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val targetMinutes: Int,
+    val timestamp: Long = System.currentTimeMillis()
 ) 

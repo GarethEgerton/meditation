@@ -41,11 +41,19 @@ class HomeFragment : Fragment() {
         binding.timer1min.setOnClickListener { viewModel.handleTimerClick(1) }
         binding.timer2min.setOnClickListener { viewModel.handleTimerClick(2) }
         binding.timer5min.setOnClickListener { viewModel.handleTimerClick(5) }
+        binding.timerCustom.setOnClickListener { viewModel.handleTimerClick(-1) }
 
         // Set up cancel button click listeners
         binding.cancel1min.setOnClickListener { viewModel.cancelTimer(1) }
         binding.cancel2min.setOnClickListener { viewModel.cancelTimer(2) }
         binding.cancel5min.setOnClickListener { viewModel.cancelTimer(5) }
+        binding.cancelCustom.setOnClickListener { viewModel.cancelTimer(-1) }
+
+        // Set up custom timer long press
+        binding.timerCustom.setOnLongClickListener {
+            showCustomTimerDialog()
+            true
+        }
 
         // Observe timer text changes
         viewModel.timerOneText.observe(viewLifecycleOwner) {
@@ -56,6 +64,9 @@ class HomeFragment : Fragment() {
         }
         viewModel.timerFiveText.observe(viewLifecycleOwner) {
             binding.timer5min.text = it
+        }
+        viewModel.timerCustomText.observe(viewLifecycleOwner) {
+            binding.timerCustom.text = it
         }
 
         // Observe timer state
@@ -86,6 +97,24 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // Observe timer state for complete button visibility
+        viewModel.timerState.observe(viewLifecycleOwner) { state ->
+            binding.completeCustom.visibility = if (state.activeTimer == -1 && state.isPaused) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        }
+
+        // Handle complete button click
+        binding.completeCustom.setOnClickListener {
+            viewModel.completeCustomTimer()
+        }
+    }
+
     private fun observeProgress() {
         // Observe 1-minute timer progress
         viewModel.oneMinCompletions.observe(viewLifecycleOwner) { completionState ->
@@ -106,6 +135,11 @@ class HomeFragment : Fragment() {
             viewModel.fiveMinGoal.observe(viewLifecycleOwner) { goal ->
                 updateProgressText(binding.progress5min, completionState.count, goal, completionState.isToday)
             }
+        }
+
+        // Observe custom timer progress
+        viewModel.customCompletions.observe(viewLifecycleOwner) { completionState ->
+            updateProgressText(binding.progressCustom, completionState.count, 0, completionState.isToday)
         }
     }
 
@@ -153,6 +187,7 @@ class HomeFragment : Fragment() {
         binding.cancel1min.visibility = if (activeTimer == 1 && isPaused) View.VISIBLE else View.GONE
         binding.cancel2min.visibility = if (activeTimer == 2 && isPaused) View.VISIBLE else View.GONE
         binding.cancel5min.visibility = if (activeTimer == 5 && isPaused) View.VISIBLE else View.GONE
+        binding.cancelCustom.visibility = if (activeTimer == -1 && isPaused) View.VISIBLE else View.GONE
     }
 
     private fun showErrorAnimation(button: MaterialButton) {
@@ -186,6 +221,7 @@ class HomeFragment : Fragment() {
         setButtonAppearance(binding.timer1min, binding.progress1min, 1)
         setButtonAppearance(binding.timer2min, binding.progress2min, 2)
         setButtonAppearance(binding.timer5min, binding.progress5min, 5)
+        setButtonAppearance(binding.timerCustom, binding.progressCustom, -1)
     }
 
     private fun setButtonAppearance(button: MaterialButton, progressText: TextView, minutes: Int) {
@@ -200,34 +236,48 @@ class HomeFragment : Fragment() {
                 1 -> R.color.timer_1min_inactive
                 2 -> R.color.timer_2min_inactive
                 5 -> R.color.timer_5min_inactive
-                else -> R.color.black
+                else -> R.color.timer_custom_inactive
             }
             isPaused -> when (minutes) {
                 1 -> R.color.timer_1min_paused
                 2 -> R.color.timer_2min_paused
                 5 -> R.color.timer_5min_paused
-                else -> R.color.black
+                else -> R.color.timer_custom_paused
             }
             else -> when (minutes) {
                 1 -> R.color.timer_1min
                 2 -> R.color.timer_2min
                 5 -> R.color.timer_5min
-                else -> R.color.black
+                else -> R.color.timer_custom
             }
         }
 
+        val strokeColorResId = when (minutes) {
+            1 -> R.color.timer_1min_stroke
+            2 -> R.color.timer_2min_stroke
+            5 -> R.color.timer_5min_stroke
+            else -> R.color.timer_custom_stroke
+        }
+
         if (isInactive) {
-            animateButtonState(button, progressText, colorResId, 0.5f, 0)
+            animateButtonState(button, progressText, colorResId, 0.5f, 0, null)
         } else if (isPaused) {
-            animateButtonState(button, progressText, colorResId, 0.8f, resources.getDimensionPixelSize(R.dimen.button_stroke_width))
+            animateButtonState(button, progressText, colorResId, 1.0f, resources.getDimensionPixelSize(R.dimen.button_stroke_width), strokeColorResId)
         } else {
-            animateButtonState(button, progressText, colorResId, 1.0f, 0)
+            animateButtonState(button, progressText, colorResId, 1.0f, 0, null)
         }
 
         button.isEnabled = !isInactive
     }
 
-    private fun animateButtonState(button: MaterialButton, progressText: TextView, @ColorRes colorResId: Int, targetAlpha: Float, strokeWidth: Int) {
+    private fun animateButtonState(
+        button: MaterialButton, 
+        progressText: TextView, 
+        @ColorRes colorResId: Int, 
+        targetAlpha: Float, 
+        strokeWidth: Int,
+        @ColorRes strokeColorResId: Int?
+    ) {
         val context = button.context
         val color = ContextCompat.getColor(context, colorResId)
         
@@ -249,11 +299,14 @@ class HomeFragment : Fragment() {
         }
         colorAnimator.start()
 
-        // Animate stroke width
+        // Animate stroke width and color
         ValueAnimator.ofInt(button.strokeWidth, strokeWidth).apply {
             duration = 500
             addUpdateListener { animator ->
                 button.strokeWidth = animator.animatedValue as Int
+                if (strokeColorResId != null) {
+                    button.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(context, strokeColorResId))
+                }
             }
             start()
         }
@@ -267,6 +320,14 @@ class HomeFragment : Fragment() {
             mediaPlayer = null
         }
         mediaPlayer?.start()
+    }
+
+    private fun showCustomTimerDialog() {
+        CustomTimerDialog.newInstance(
+            onSave = { hours, minutes, isInfinite ->
+                viewModel.updateCustomTimer(hours, minutes, isInfinite)
+            }
+        ).show(childFragmentManager, "custom_timer_dialog")
     }
 
     override fun onDestroyView() {

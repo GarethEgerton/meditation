@@ -34,16 +34,30 @@ class DashboardFragment : Fragment() {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
 
         // Initialize EditText fields with default values
+        binding.dailyMinutesGoal.setText("0")
         binding.oneMinGoal.setText("0")
         binding.twoMinGoal.setText("0")
         binding.fiveMinGoal.setText("0")
 
         // Set up text change listeners
+        setupGoalInput(binding.dailyMinutesGoal, dashboardViewModel::updateDailyMinutesGoal)
         setupGoalInput(binding.oneMinGoal, dashboardViewModel::updateOneMinGoal)
         setupGoalInput(binding.twoMinGoal, dashboardViewModel::updateTwoMinGoal)
         setupGoalInput(binding.fiveMinGoal, dashboardViewModel::updateFiveMinGoal)
 
-        // Observe goal values
+        // Observe daily minutes goal and progress
+        dashboardViewModel.dailyMinutesGoal.observe(viewLifecycleOwner) { goal ->
+            if (binding.dailyMinutesGoal.text.toString() != goal.toString()) {
+                binding.dailyMinutesGoal.setText(goal.toString())
+            }
+        }
+
+        dashboardViewModel.todayTotalMinutes.observe(viewLifecycleOwner) { minutes ->
+            val goal = dashboardViewModel.dailyMinutesGoal.value ?: 0
+            updateDailyMinutesProgress(minutes, goal)
+        }
+
+        // Observe other goal values
         dashboardViewModel.oneMinGoal.observe(viewLifecycleOwner) { goal ->
             if (binding.oneMinGoal.text.toString() != goal.toString()) {
                 binding.oneMinGoal.setText(goal.toString())
@@ -65,20 +79,40 @@ class DashboardFragment : Fragment() {
         return binding.root
     }
 
+    private fun updateDailyMinutesProgress(minutes: Int, goal: Int) {
+        binding.dailyMinutesProgress.text = "$minutes/$goal minutes today"
+        binding.dailyMinutesProgressBar.max = maxOf(goal, minutes)
+        binding.dailyMinutesProgressBar.progress = minutes
+    }
+
     private fun setupGoalInput(input: TextInputEditText, updateFunction: (Int?) -> Unit) {
         val textWatcher = object : TextWatcher {
+            private var isUpdating = false
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val text = s?.toString() ?: ""
-                val value = if (text.isEmpty()) 0 else text.toIntOrNull() ?: 0
-                updateFunction(value)
+                if (!isUpdating) {
+                    val text = s?.toString() ?: ""
+                    val value = if (text.isEmpty()) 0 else text.toIntOrNull() ?: 0
+                    updateFunction(value)
+                }
             }
             
             override fun afterTextChanged(s: Editable?) {
-                if (s.isNullOrEmpty()) {
-                    input.setText("0")
-                    input.setSelection(1)
+                if (isUpdating) return
+                
+                isUpdating = true
+                try {
+                    val text = s?.toString() ?: ""
+                    if (text.isEmpty()) {
+                        input.setText("0")
+                    }
+                    input.text?.length?.let { length ->
+                        input.setSelection(length)
+                    }
+                } finally {
+                    isUpdating = false
                 }
             }
         }
@@ -106,6 +140,7 @@ class DashboardFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         // Remove focus from EditTexts
+        binding.dailyMinutesGoal.clearFocus()
         binding.oneMinGoal.clearFocus()
         binding.twoMinGoal.clearFocus()
         binding.fiveMinGoal.clearFocus()
@@ -118,6 +153,7 @@ class DashboardFragment : Fragment() {
         super.onDestroyView()
         // Remove text watchers
         textWatchers.forEach { watcher ->
+            binding.dailyMinutesGoal.removeTextChangedListener(watcher)
             binding.oneMinGoal.removeTextChangedListener(watcher)
             binding.twoMinGoal.removeTextChangedListener(watcher)
             binding.fiveMinGoal.removeTextChangedListener(watcher)

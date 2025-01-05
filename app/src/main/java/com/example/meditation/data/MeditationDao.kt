@@ -61,4 +61,27 @@ interface MeditationDao {
 
     @Query("SELECT COUNT(*) FROM meditation_completions WHERE date = :date AND timerMinutes = :minutes")
     suspend fun getCompletionCountForDateSync(date: String, minutes: Int): Int
+
+    // Daily minutes goal operations
+    @Query("""
+        SELECT * FROM daily_minutes_goals 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    """)
+    fun getCurrentDailyMinutesGoal(): Flow<DailyMinutesGoal?>
+
+    @Insert
+    suspend fun insertDailyMinutesGoal(goal: DailyMinutesGoal)
+
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN actualDuration IS NOT NULL THEN actualDuration 
+                ELSE timerMinutes * 60 
+            END
+        ), 0) 
+        FROM meditation_completions 
+        WHERE date = :date
+    """)
+    fun getTotalMinutesForDate(date: String): Flow<Long>
 } 

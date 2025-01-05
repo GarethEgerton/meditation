@@ -22,15 +22,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _fiveMinGoal = MutableLiveData<Int>()
     val fiveMinGoal: LiveData<Int> = _fiveMinGoal
 
+    private val _dailyMinutesGoal = MutableLiveData<Int>()
+    val dailyMinutesGoal: LiveData<Int> = _dailyMinutesGoal
+
+    private val _todayTotalMinutes = MutableLiveData<Int>()
+    val todayTotalMinutes: LiveData<Int> = _todayTotalMinutes
+
     init {
         val database = MeditationDatabase.getDatabase(application)
         repository = MeditationRepository(database.meditationDao())
         
         // Load all goals from database
         loadGoalsFromDatabase()
+        loadDailyMinutesProgress()
     }
 
     private fun loadGoalsFromDatabase() {
+        viewModelScope.launch {
+            // Load daily minutes goal
+            repository.getCurrentDailyMinutesGoal().collect { goal ->
+                _dailyMinutesGoal.value = goal?.targetMinutes ?: 0
+            }
+        }
+
         viewModelScope.launch {
             // Load 1-minute goal
             repository.getGoalForTimer(1).collect { goal ->
@@ -50,6 +64,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             repository.getGoalForTimer(5).collect { goal ->
                 _fiveMinGoal.value = goal?.timesPerDay ?: 0
             }
+        }
+    }
+
+    private fun loadDailyMinutesProgress() {
+        viewModelScope.launch {
+            repository.getTodayTotalMinutes().collect { totalSeconds ->
+                _todayTotalMinutes.value = (totalSeconds / 60).toInt()
+            }
+        }
+    }
+
+    fun updateDailyMinutesGoal(value: Int?) {
+        val goalValue = value ?: 0
+        _dailyMinutesGoal.value = goalValue
+        viewModelScope.launch {
+            repository.updateDailyMinutesGoal(goalValue)
         }
     }
 

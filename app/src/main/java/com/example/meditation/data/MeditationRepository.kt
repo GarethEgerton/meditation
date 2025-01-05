@@ -34,6 +34,17 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
         meditationDao.insertCompletion(completion)
     }
 
+    suspend fun recordCustomCompletion(minutes: Int, actualDuration: Long) {
+        val currentDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val completion = MeditationCompletion(
+            timerMinutes = minutes,
+            timestamp = System.currentTimeMillis(),
+            date = currentDate,
+            actualDuration = actualDuration
+        )
+        meditationDao.insertCompletion(completion)
+    }
+
     fun getTodayCompletions(minutes: Int): Flow<List<MeditationCompletion>> {
         val today = LocalDate.now().format(dateFormatter)
         return meditationDao.getCompletionsForDate(today, minutes)
@@ -44,6 +55,11 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
         return meditationDao.getCompletionCountForDate(today, minutes)
     }
 
+    suspend fun getCompletionCountForDate(date: LocalDate, minutes: Int): Int {
+        val formattedDate = date.format(dateFormatter)
+        return meditationDao.getCompletionCountForDateSync(formattedDate, minutes)
+    }
+
     fun getAllCompletions(): Flow<List<MeditationCompletion>> = 
         meditationDao.getAllCompletions()
 
@@ -52,7 +68,22 @@ class MeditationRepository(private val meditationDao: MeditationDao) {
         meditationDao.deleteCompletionsBeforeDate(cutoffDate)
     }
 
-    suspend fun getCompletionCountForDate(date: LocalDate, minutes: Int): Int {
-        return meditationDao.getCompletionCountForDateSync(date.format(dateFormatter), minutes)
+    // Daily minutes goal operations
+    fun getCurrentDailyMinutesGoal(): Flow<DailyMinutesGoal?> =
+        meditationDao.getCurrentDailyMinutesGoal()
+
+    suspend fun updateDailyMinutesGoal(targetMinutes: Int) {
+        val goal = DailyMinutesGoal(targetMinutes = targetMinutes)
+        meditationDao.insertDailyMinutesGoal(goal)
+    }
+
+    fun getTodayTotalMinutes(): Flow<Long> {
+        val today = LocalDate.now().format(dateFormatter)
+        return meditationDao.getTotalMinutesForDate(today)
+    }
+
+    fun getTotalMinutesForDate(date: LocalDate): Flow<Long> {
+        val formattedDate = date.format(dateFormatter)
+        return meditationDao.getTotalMinutesForDate(formattedDate)
     }
 } 
