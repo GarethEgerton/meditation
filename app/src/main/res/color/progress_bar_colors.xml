@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Completed state -->
+    <item android:state_activated="true">
+        <color android:color="@color/teal_200" />
+    </item>
+    <!-- In progress state -->
+    <item>
+        <color android:color="@color/daily_goal_progress_bar" />
+    </item>
+</selector> 

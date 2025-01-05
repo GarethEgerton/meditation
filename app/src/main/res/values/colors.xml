@@ -41,4 +41,11 @@
     <color name="daily_goal_progress_bar">@color/timer_custom</color>
     <color name="daily_goal_progress_background">#40FFAB91</color>
     <color name="daily_goal_input_background">#3F2F2A</color>
+
+    <!-- Completed Goal Colors -->
+    <color name="daily_goal_completed_background">#1A2E2E</color>
+    <color name="daily_goal_completed_text">#FF03DAC5</color>
+    <color name="daily_goal_completed_progress_text">#B3E5FC</color>
+    <color name="daily_goal_completed_progress_bar">@color/teal_200</color>
+    <color name="daily_goal_completed_progress_background">#40018786</color>
 </resources>

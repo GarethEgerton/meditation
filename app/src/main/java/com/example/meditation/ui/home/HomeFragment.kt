@@ -20,6 +20,7 @@ import com.example.meditation.databinding.FragmentHomeBinding
 import com.google.android.material.button.MaterialButton
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 
 class HomeFragment : Fragment() {
 
@@ -99,6 +100,8 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        setupDailyGoalProgress()
 
         // Observe timer state for complete button visibility
         viewModel.timerState.observe(viewLifecycleOwner) { state ->
@@ -328,6 +331,43 @@ class HomeFragment : Fragment() {
                 viewModel.updateCustomTimer(hours, minutes, isInfinite)
             }
         ).show(childFragmentManager, "custom_timer_dialog")
+    }
+
+    private fun setupDailyGoalProgress() {
+        viewModel.dailyProgress.observe(viewLifecycleOwner) { progress ->
+            updateDailyProgress(progress.completed, progress.target)
+        }
+    }
+
+    private fun updateDailyProgress(completedMinutes: Int, targetMinutes: Int) {
+        with(binding) {
+            dailyGoalProgress.max = targetMinutes
+            dailyGoalProgress.setProgress(completedMinutes, true)
+            dailyGoalText.text = getString(R.string.daily_progress_format, completedMinutes, targetMinutes)
+
+            val isCompleted = completedMinutes >= targetMinutes && completedMinutes > 0
+            dailyGoalCard.isActivated = isCompleted
+            dailyGoalLabel.isActivated = isCompleted
+            dailyGoalText.isActivated = isCompleted
+
+            if (isCompleted) {
+                animateProgressCompletion()
+            }
+        }
+    }
+
+    private fun animateProgressCompletion() {
+        val colorFrom = ContextCompat.getColor(requireContext(), R.color.daily_goal_progress_bar)
+        val colorTo = ContextCompat.getColor(requireContext(), R.color.teal_200)
+        
+        ValueAnimator.ofArgb(colorFrom, colorTo).apply {
+            duration = 500
+            interpolator = FastOutSlowInInterpolator()
+            addUpdateListener { animator ->
+                binding.dailyGoalProgress.setIndicatorColor(animator.animatedValue as Int)
+            }
+            start()
+        }
     }
 
     override fun onDestroyView() {

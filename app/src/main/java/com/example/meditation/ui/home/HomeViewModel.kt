@@ -64,6 +64,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _customCompletions = MutableLiveData<CompletionState>()
     val customCompletions: LiveData<CompletionState> = _customCompletions
 
+    data class DailyProgress(
+        val completed: Int = 0,
+        val target: Int = 30  // Default target of 30 minutes
+    )
+
+    private val _dailyProgress = MutableLiveData<DailyProgress>()
+    val dailyProgress: LiveData<DailyProgress> = _dailyProgress
+
     init {
         val database = MeditationDatabase.getDatabase(application)
         repository = MeditationRepository(database.meditationDao())
@@ -80,6 +88,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         fiveMinGoal = repository.getGoalForTimer(5)
             .map { it?.timesPerDay ?: 0 }
             .asLiveData()
+
+        // Initialize daily progress
+        viewModelScope.launch {
+            // Observe daily minutes goal
+            launch {
+                repository.getCurrentDailyMinutesGoal().collect { goal ->
+                    updateDailyProgress(targetMinutes = goal?.targetMinutes ?: 30)
+                }
+            }
+
+            // Observe today's total minutes
+            launch {
+                repository.getTodayTotalMinutes().collect { totalMinutes ->
+                    updateDailyProgress(completedMinutes = totalMinutes.toInt())
+                }
+            }
+        }
 
         // Initialize completions from database with today flag
         viewModelScope.launch {
@@ -126,6 +151,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    private fun updateDailyProgress(targetMinutes: Int? = null, completedMinutes: Int? = null) {
+        val currentProgress = _dailyProgress.value ?: DailyProgress()
+        _dailyProgress.value = currentProgress.copy(
+            target = targetMinutes ?: currentProgress.target,
+            completed = completedMinutes ?: currentProgress.completed
+        )
     }
 
     data class TimerState(
